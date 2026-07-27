@@ -51,6 +51,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137439514",
+      "description": "Maaf",
+      "montant": 85.65,
+      "categorie": "📄 Assurance",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
