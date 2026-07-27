@@ -253,7 +253,7 @@
     .btn-secondary { padding: 12px; background: var(--bg); color: var(--text); border: 0.5px solid var(--border); border-radius: 12px; font-weight: 600; cursor: pointer; }
     .btn-delete { flex: 1; padding: 12px; background: rgba(255, 59, 48, 0.15); color: var(--red); border: 0.5px solid var(--red); border-radius: 12px; font-weight: 700; cursor: pointer; display: none; }
 
-    /* Écran de verrouillage PIN & Face ID */
+    /* Écran de verrouillage PIN */
     #lockScreen {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: var(--bg); color: var(--text); display: flex; flex-direction: column;
@@ -481,9 +481,9 @@
       const savedPin = localStorage.getItem('app_pin');
       if (savedPin && savedPin.length === 4) {
         document.getElementById('lockScreen').style.display = 'flex';
+        // Affiche le bouton uniquement si la biométrie est supportée par l'appareil
         if (window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
           document.getElementById('faceIdBtn').style.display = 'flex';
-          authentifierFaceID();
         }
       } else {
         chargerDonnees();
@@ -495,14 +495,14 @@
         const challenge = new Uint8Array(32);
         window.crypto.getRandomValues(challenge);
         const assertion = await navigator.credentials.get({
-          publicKey: { challenge: challenge, timeout: 60000, userVerification: "required" }
+          publicKey: { challenge: challenge, timeout: 60000, userVerification: "preferred" }
         });
         if (assertion) {
           document.getElementById('lockScreen').style.display = 'none';
           chargerDonnees();
         }
       } catch (e) {
-        console.log("Face ID annulé ou indisponible.");
+        alert("Face ID n'est pas encore enregistré sur ce domaine. Veuillez saisir votre code PIN.");
       }
     }
 
