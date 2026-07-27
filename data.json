@@ -33,6 +33,15 @@
       "type": "credit",
       "categorie": "💼 Salaire",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137361424",
+      "description": "Taxe foncière ",
+      "montant": 30,
+      "categorie": "🏠 Logement",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
