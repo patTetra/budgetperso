@@ -123,17 +123,18 @@
       padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
     }
     .operation-item:last-child { border-bottom: none; }
+    .operation-item.is-prevision { opacity: 0.65; background-color: #f8fafc; }
     .op-left { display: flex; align-items: center; gap: 10px; }
     .op-cat-icon { font-size: 1.3rem; background: var(--bg); padding: 8px; border-radius: 10px; }
     .op-info { display: flex; flex-direction: column; gap: 2px; }
     .op-desc { font-weight: 600; font-size: 0.9rem; }
-    .op-badge-account { font-size: 0.65rem; color: var(--text-muted); background: var(--bg); padding: 1px 6px; border-radius: 4px; width: fit-content; }
     
     .btn-action-charge {
       font-size: 0.75rem; background: #dcfce7; color: var(--green); border: 1px solid #86efac;
       padding: 4px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 4px; width: fit-content;
     }
     .btn-action-charge.salary { background: #dbeafe; color: var(--primary); border-color: #93c5fd; }
+    .btn-action-charge.prev { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
     
     .op-amount-block { text-align: right; }
     .op-amount { font-weight: 700; font-size: 0.95rem; }
@@ -196,7 +197,6 @@
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE -->
   <div id="lockScreen" style="display: none;">
     <h2>🔒 Mes Comptes Perso</h2>
     <p style="color: #94a3b8; font-size: 0.9rem;">Entrez votre code PIN</p>
@@ -230,24 +230,21 @@
     </div>
   </div>
 
-  <!-- Sélecteur de vue -->
   <div class="account-selector">
     <div class="account-tab active" id="tab-courant" onclick="selectAccountView('courant')">💳 Courant</div>
     <div class="account-tab" id="tab-livret" onclick="selectAccountView('livret')">🐷 Livret</div>
     <div class="account-tab" id="tab-fixes" onclick="selectAccountView('fixes')">📅 Charges Fixes</div>
   </div>
 
-  <!-- Dashboard -->
   <div class="dashboard-card" id="dashboardCard">
     <div class="solde-label" id="soldeLabel">Solde Compte Courant</div>
     <div id="soldeActuel" class="solde-main">0,00 €</div>
     <div class="solde-prev-container">
-      <span>Solde Reste à Venir (Fin de cycle)</span>
+      <span>Solde Prévisionnel (Reste du cycle)</span>
       <strong id="soldePrevisionnel">0,00 €</strong>
     </div>
   </div>
 
-  <!-- RÉSUMÉ & GRAPHIQUE (Masqué en mode Charges Fixes) -->
   <div class="stats-card" id="statsCard">
     <div class="stats-grid">
       <div class="stat-item">
@@ -264,7 +261,6 @@
     </div>
   </div>
 
-  <!-- RECHERCHE -->
   <div class="filter-section" id="filterSection">
     <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher..." oninput="afficherDonnees()">
   </div>
@@ -273,7 +269,6 @@
 
   <button class="fab" id="fabAdd" onclick="ouvrirModalAjout()">+</button>
 
-  <!-- MODAL OPÉRATION -->
   <div id="opModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -325,9 +320,12 @@
           <input type="date" id="dateOp" class="form-control">
         </div>
 
-        <div class="form-group">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
+            <input type="checkbox" id="isPrevision"> Opération prévisionnelle (non comptabilisée en solde réel)
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
+            <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente (Onglet Charges)
           </label>
         </div>
 
@@ -339,7 +337,6 @@
     </div>
   </div>
 
-  <!-- CONFIGURATION -->
   <div id="configModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -429,6 +426,7 @@
       document.getElementById('montantOp').value = "";
       document.getElementById('dateOp').valueAsDate = new Date();
       document.getElementById('compteOp').value = activeAccountView === 'livret' ? 'livret' : 'courant';
+      document.getElementById('isPrevision').checked = false;
       document.getElementById('isChargeFixe').checked = activeAccountView === 'fixes';
       document.getElementById('catOp').value = "📦 Autre";
       document.getElementById('btnDelete').style.display = 'none';
@@ -436,6 +434,25 @@
       
       document.getElementById('opModal').classList.add('open');
       setTimeout(() => document.getElementById('montantOp').focus(), 100);
+    }
+
+    function ouvrirModalEdition(id) {
+      const op = rawData.operations.find(o => o.id === id);
+      if (!op) return;
+
+      document.getElementById('modalTitle').innerText = "Modifier l'opération";
+      document.getElementById('editOpId').value = op.id;
+      document.getElementById('descOp').value = op.description;
+      document.getElementById('montantOp').value = Math.abs(op.montant);
+      document.getElementById('dateOp').value = op.date;
+      document.getElementById('compteOp').value = op.compte || 'courant';
+      document.getElementById('catOp').value = op.categorie || "📦 Autre";
+      document.getElementById('isPrevision').checked = !!op.isPrevision;
+      document.getElementById('isChargeFixe').checked = false;
+      document.getElementById('btnDelete').style.display = 'block';
+      setType(op.type);
+
+      document.getElementById('opModal').classList.add('open');
     }
 
     function fermerModalOp() { document.getElementById('opModal').classList.remove('open'); }
@@ -491,6 +508,7 @@
       ops.sort((a, b) => new Date(b.date) - new Date(a.date));
 
       let soldeActuel = 0;
+      let soldePrevisionnel = 0;
       let mCredit = 0;
       let mDebit = 0;
 
@@ -501,27 +519,29 @@
 
       opsDuCompte.forEach(op => {
         const val = op.type === 'debit' ? -Math.abs(op.montant) : Math.abs(op.montant);
-        soldeActuel += val;
-
-        const d = new Date(op.date);
-        if (d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) === currentMonthYear) {
-          if (op.type === 'credit') mCredit += Math.abs(op.montant);
-          else mDebit += Math.abs(op.montant);
+        
+        if (!op.isPrevision) {
+          soldeActuel += val;
+          const d = new Date(op.date);
+          if (d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) === currentMonthYear) {
+            if (op.type === 'credit') mCredit += Math.abs(op.montant);
+            else mDebit += Math.abs(op.montant);
+          }
         }
+        soldePrevisionnel += val;
       });
 
-      // Calcul du solde restant à venir basé sur les charges fixes non encore validées ce mois-ci
-      let resteAVenir = 0;
+      // Prise en compte des charges fixes non encore exécutées ce mois
       if (activeAccountView === 'courant') {
         (rawData.chargesFixes || []).forEach(cf => {
           if (!cf.valideCeMois) {
-            resteAVenir += cf.type === 'debit' ? -Math.abs(cf.montant) : Math.abs(cf.montant);
+            soldePrevisionnel += cf.type === 'debit' ? -Math.abs(cf.montant) : Math.abs(cf.montant);
           }
         });
       }
 
       document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
-      document.getElementById('soldePrevisionnel').innerText = `${(soldeActuel + resteAVenir).toFixed(2)} €`;
+      document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
       document.getElementById('statCredit').innerText = `+${mCredit.toFixed(2)} €`;
       document.getElementById('statDebit').innerText = `-${mDebit.toFixed(2)} €`;
 
@@ -542,11 +562,12 @@
           const d = new Date(op.date);
           const icon = (op.categorie || "📦").split(' ')[0];
           html += `
-            <div class="operation-item" onclick="ouvrirModalEdition('${op.id}')">
+            <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" onclick="ouvrirModalEdition('${op.id}')">
               <div class="op-left">
                 <span class="op-cat-icon">${icon}</span>
                 <div class="op-info">
                   <span class="op-desc">${op.description}</span>
+                  ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider Prévision</button>` : ''}
                 </div>
               </div>
               <div class="op-amount-block">
@@ -559,7 +580,7 @@
       }
 
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
-      updateChart(opsDuCompte);
+      updateChart(opsDuCompte.filter(o => !o.isPrevision));
     }
 
     function afficherChargesFixes() {
@@ -592,11 +613,18 @@
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune charge fixe enregistrée.</p>";
     }
 
+    async function validerPrevision(id) {
+      const op = rawData.operations.find(o => o.id === id);
+      if (op) {
+        op.isPrevision = false;
+        await pushToGitHub(`Validation prévision : ${op.description}`);
+      }
+    }
+
     async function validerChargeFixe(id) {
       const cf = rawData.chargesFixes.find(c => c.id === id);
       if (!cf) return;
 
-      // Ajouter aux opérations réelles
       rawData.operations.push({
         id: Date.now().toString(),
         date: new Date().toISOString().slice(0, 10),
@@ -604,12 +632,11 @@
         description: cf.description,
         montant: cf.montant,
         type: cf.type,
-        categorie: cf.categorie
+        categorie: cf.categorie,
+        isPrevision: false
       });
 
-      // Marquer comme validée ce mois
       cf.valideCeMois = true;
-
       await pushToGitHub(`Validation charge : ${cf.description}`);
     }
 
@@ -622,7 +649,6 @@
 
       const montantExact = parseFloat(sMontant);
 
-      // 1. Ajouter le salaire réel dans les opérations
       rawData.operations.push({
         id: Date.now().toString(),
         date: new Date().toISOString().slice(0, 10),
@@ -630,12 +656,12 @@
         description: cf.description,
         montant: montantExact,
         type: 'credit',
-        categorie: cf.categorie
+        categorie: cf.categorie,
+        isPrevision: false
       });
 
       cf.valideCeMois = true;
 
-      // 2. Réinitialiser le cycle des autres charges fixes ?
       if (confirm("Le salaire est enregistré ! Veux-tu réinitialiser toutes les charges fixes pour lancer le NOUVEAU MOIS ?")) {
         rawData.chargesFixes.forEach(c => c.valideCeMois = false);
       }
@@ -647,6 +673,13 @@
       if (!confirm("Supprimer cette charge fixe récurrente ?")) return;
       rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
       await pushToGitHub("Suppression charge fixe");
+    }
+
+    async function supprimerOperation() {
+      const id = document.getElementById('editOpId').value;
+      if (!id || !confirm("Supprimer cette opération ?")) return;
+      rawData.operations = rawData.operations.filter(o => o.id !== id);
+      await pushToGitHub("Suppression opération");
     }
 
     function updateChart(opsSource) {
@@ -683,9 +716,9 @@
 
     function exporterCSV() {
       let ops = rawData.operations || [];
-      let csv = "ID;Date;Type;Compte;Categorie;Description;Montant\n";
+      let csv = "ID;Date;Type;Compte;Categorie;Description;Montant;Prevision\n";
       ops.forEach(o => {
-        csv += `"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant}\n`;
+        csv += `"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant};"${o.isPrevision ? 'OUI' : 'NON'}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
@@ -720,10 +753,11 @@
 
     async function sauvegarderOperation(e) {
       e.preventDefault();
+      const editId = document.getElementById('editOpId').value;
       const isFixe = document.getElementById('isChargeFixe').checked;
 
       const itemData = {
-        id: Date.now().toString(),
+        id: editId || Date.now().toString(),
         description: document.getElementById('descOp').value,
         montant: parseFloat(document.getElementById('montantOp').value),
         categorie: document.getElementById('catOp').value,
@@ -737,8 +771,15 @@
         await pushToGitHub(`Ajout Charge Fixe : ${itemData.description}`);
       } else {
         itemData.date = document.getElementById('dateOp').value;
-        rawData.operations.push(itemData);
-        await pushToGitHub(`Ajout Dépense : ${itemData.description}`);
+        itemData.isPrevision = document.getElementById('isPrevision').checked;
+        
+        if (editId) {
+          const idx = rawData.operations.findIndex(o => o.id === editId);
+          if (idx !== -1) rawData.operations[idx] = itemData;
+        } else {
+          rawData.operations.push(itemData);
+        }
+        await pushToGitHub(`Enregistrement Dépense : ${itemData.description}`);
       }
     }
 
