@@ -155,6 +155,7 @@
       "description": "Prêt Maroc",
       "montant": 100,
       "categorie": "🏠 Logement",
+      "dateFinCredit": "2029-02",
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
