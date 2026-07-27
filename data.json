@@ -152,6 +152,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137739343",
+      "description": "Coiffeur ",
+      "montant": 22,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
