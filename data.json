@@ -179,6 +179,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137843993",
+      "description": "Remboursement mariage parents ",
+      "montant": 25,
+      "categorie": "🏠 Logement",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
