@@ -1,5 +1,17 @@
 {
-  "operations": [],
+  "operations": [
+    {
+      "id": "1785164699792",
+      "date": "2026-07-27",
+      "compte": "courant",
+      "description": "Tessie",
+      "montant": 4.99,
+      "type": "debit",
+      "categorie": "🚗 Transport",
+      "dateFinCredit": null,
+      "isPrevision": false
+    }
+  ],
   "chargesFixes": [
     {
       "id": "1",
@@ -136,7 +148,7 @@
       "dateFinCredit": null,
       "type": "debit",
       "compte": "courant",
-      "valideCeMois": false
+      "valideCeMois": true
     },
     {
       "id": "1785137710751",
