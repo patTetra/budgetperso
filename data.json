@@ -161,6 +161,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137784703",
+      "description": "Cantine",
+      "montant": 80,
+      "categorie": "📦 Autre",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
