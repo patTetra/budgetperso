@@ -1,5 +1,16 @@
 {
-  "operations": [],
+  "operations": [
+    {
+      "id": "1785139499570",
+      "date": "2026-07-27",
+      "compte": "courant",
+      "description": "Salaire",
+      "montant": 2681,
+      "type": "credit",
+      "categorie": "💼 Salaire",
+      "isPrevision": false
+    }
+  ],
   "chargesFixes": [
     {
       "id": "1",
@@ -44,7 +55,7 @@
       "categorie": "📄 Assurance",
       "type": "debit",
       "compte": "courant",
-      "valideCeMois": true
+      "valideCeMois": false
     },
     {
       "id": "1785137464296",
