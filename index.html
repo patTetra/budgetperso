@@ -192,7 +192,7 @@
     
     .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
     .btn-submit { flex: 2; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
-    .btn-secondary { padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-secondary { padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; }
     .btn-delete { flex: 1; padding: 12px; background: #fee2e2; color: var(--red); border: 1px solid #fca5a5; border-radius: 8px; font-weight: 700; cursor: pointer; display: none; }
 
     /* Screen Lock PIN */
@@ -392,8 +392,16 @@
       
       <hr style="border:0; border-top: 1px solid var(--border); margin: 16px 0;">
 
-      <div class="form-group">
-        <button class="btn-secondary" style="width:100%" onclick="exporterCSV()">📥 Exporter les données (CSV)</button>
+      <!-- EXPORTATIONS ET IMPORTATIONS -->
+      <div class="form-group" style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn-secondary" style="width:100%" onclick="exporterJSON()">📦 Sauvegarder tout (JSON)</button>
+        
+        <label class="btn-secondary" style="width:100%; cursor:pointer; background:#eff6ff; border-color:#bfdbfe; color:var(--primary);">
+          📤 Importer une sauvegarde (JSON)
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importerJSON(event)">
+        </label>
+
+        <button class="btn-secondary" style="width:100%" onclick="exporterCSV()">📥 Exporter tout au format CSV</button>
       </div>
     </div>
   </div>
@@ -616,7 +624,6 @@
         soldePrevisionnel += val;
       });
 
-      // Prise en compte des charges fixes non encore exécutées ce mois
       if (activeAccountView === 'courant') {
         (rawData.chargesFixes || []).forEach(cf => {
           if (!cf.valideCeMois) {
@@ -628,7 +635,6 @@
       document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
       document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
 
-      // --- GESTION DYNAMIQUE DE LA COULEUR DU DASHBOARD ---
       const card = document.getElementById('dashboardCard');
       const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
 
@@ -795,17 +801,94 @@
       }
     }
 
+    /* --- EXPORTATIONS ET IMPORTATIONS COMPLETES --- */
+
+    function exporterJSON() {
+      const backupData = {
+        app_version: "2.0",
+        date_export: new Date().toISOString(),
+        config: {
+          gh_user: localStorage.getItem('gh_user') || '',
+          gh_repo: localStorage.getItem('gh_repo') || '',
+          gh_token: localStorage.getItem('gh_token') || '',
+          seuil_alerte: localStorage.getItem('seuil_alerte') || '200',
+          app_pin: localStorage.getItem('app_pin') || ''
+        },
+        data: rawData
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `comptes_perso_sauvegarde_integrale.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importerJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+
+          if (!imported.data || !imported.config) {
+            alert("Format de fichier invalide.");
+            return;
+          }
+
+          if (!confirm("Voulez-vous remplacer vos paramètres et vos données actuelles par cette sauvegarde ?")) {
+            return;
+          }
+
+          // Restauration des configurations locales (dont le Token GitHub)
+          if (imported.config.gh_user) localStorage.setItem('gh_user', imported.config.gh_user);
+          if (imported.config.gh_repo) localStorage.setItem('gh_repo', imported.config.gh_repo);
+          if (imported.config.gh_token) localStorage.setItem('gh_token', imported.config.gh_token);
+          if (imported.config.seuil_alerte) localStorage.setItem('seuil_alerte', imported.config.seuil_alerte);
+          if (imported.config.app_pin !== undefined) localStorage.setItem('app_pin', imported.config.app_pin);
+
+          // Restauration des données financières dans l'app
+          rawData = imported.data;
+          if (!rawData.chargesFixes) rawData.chargesFixes = [];
+
+          // Envoi immédiat des données importées vers GitHub
+          await pushToGitHub("Restauration complète depuis fichier JSON");
+
+          alert("Restauration réussie !");
+          fermerConfig();
+          location.reload();
+        } catch (err) {
+          alert("Erreur lors de la lecture du fichier JSON : " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
     function exporterCSV() {
       let ops = rawData.operations || [];
-      let csv = "ID;Date;Type;Compte;Categorie;Description;Montant;Prevision;FinCredit\n";
+      let charges = rawData.chargesFixes || [];
+
+      let csv = "TypeDonnee;ID;Date;Type;Compte;Categorie;Description;Montant;Prevision;FinCredit\n";
+
       ops.forEach(o => {
-        csv += `"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant};"${o.isPrevision ? 'OUI' : 'NON'}";"${o.dateFinCredit || ''}"\n`;
+        csv += `"OPERATION";"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant};"${o.isPrevision ? 'OUI' : 'NON'}";"${o.dateFinCredit || ''}"\n`;
       });
+
+      charges.forEach(c => {
+        csv += `"CHARGE_FIXE";"${c.id}";"Récurrente";"${c.type}";"courant";"${c.categorie || ''}";"${c.description}";${c.montant};"NON";"${c.dateFinCredit || ''}"\n`;
+      });
+
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.setAttribute("href", URL.createObjectURL(blob));
-      link.setAttribute("download", `comptes_perso_backup.csv`);
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      link.setAttribute("download", `comptes_perso_export_complet.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     async function pushToGitHub(commitMessage) {
