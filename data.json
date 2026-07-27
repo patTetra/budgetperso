@@ -10,6 +10,17 @@
       "categorie": "🚗 Transport",
       "dateFinCredit": null,
       "isPrevision": false
+    },
+    {
+      "id": "1785152163848",
+      "date": "2026-07-27",
+      "compte": "courant",
+      "description": "Tessie",
+      "montant": 4.99,
+      "type": "debit",
+      "categorie": "🚗 Transport",
+      "dateFinCredit": null,
+      "isPrevision": false
     }
   ],
   "chargesFixes": [
@@ -148,7 +159,7 @@
       "dateFinCredit": null,
       "type": "debit",
       "compte": "courant",
-      "valideCeMois": false
+      "valideCeMois": true
     },
     {
       "id": "1785137710751",
