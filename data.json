@@ -1,5 +1,17 @@
 {
-  "operations": [],
+  "operations": [
+    {
+      "id": "1785139402983",
+      "date": "2026-07-27",
+      "compte": "courant",
+      "description": "Maaf",
+      "montant": 85.65,
+      "type": "debit",
+      "categorie": "📄 Assurance",
+      "dateFinCredit": null,
+      "isPrevision": false
+    }
+  ],
   "chargesFixes": [
     {
       "id": "1",
@@ -44,7 +56,7 @@
       "categorie": "📄 Assurance",
       "type": "debit",
       "compte": "courant",
-      "valideCeMois": false
+      "valideCeMois": true
     },
     {
       "id": "1785137464296",
