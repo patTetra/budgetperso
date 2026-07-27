@@ -428,12 +428,12 @@
     let activeAccountView = "courant";
     let enteredPin = "";
 
-    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) */
+    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) AVEC LE SEL CORRIGÉ (_v2) */
     async function getKey(pin) {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin.padStart(16, "0")), { name: "PBKDF2" }, false, ["deriveKey"]);
       return crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt: enc.encode("mes_comptes_salt"), iterations: 100000, hash: "SHA-256" },
+        { name: "PBKDF2", salt: enc.encode("mes_comptes_salt_v2"), iterations: 100000, hash: "SHA-256" },
         keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
       );
     }
