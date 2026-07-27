@@ -125,6 +125,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137688920",
+      "description": "Tessie",
+      "montant": 4.3,
+      "categorie": "🚗 Transport",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
