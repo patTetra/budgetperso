@@ -95,7 +95,8 @@
       "id": "1785137604938",
       "description": "Prêt Tesla ",
       "montant": 490.16,
-      "categorie": "🚗 Transport",
+      "categorie": "🏠 Logement",
+      "dateFinCredit": "2031-03",
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
