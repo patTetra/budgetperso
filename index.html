@@ -10,7 +10,6 @@
   <title>Mes Comptes Perso</title>
 
   <style>
-    /* Variables de base (Light Mode) */
     :root {
       --bg: #f2f2f7;
       --surface: rgba(255, 255, 255, 0.85);
@@ -26,7 +25,6 @@
       --blur: blur(20px);
     }
 
-    /* Support automatique du Mode Sombre iOS */
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #000000;
@@ -56,7 +54,6 @@
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* En-tête translucide */
     .header {
       position: sticky;
       top: 0;
@@ -76,7 +73,6 @@
     .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 6px; transition: transform 0.2s ease; }
     .btn-icon:active { transform: scale(0.9); }
 
-    /* Indicateur de synchro GitHub */
     .sync-dot {
       width: 9px;
       height: 9px;
@@ -89,7 +85,6 @@
     .sync-error   { background-color: var(--red); box-shadow: 0 0 8px var(--red); }
     @keyframes pulse { from { opacity: 0.3; } to { opacity: 1; } }
 
-    /* Sélecteur de vues style iOS */
     .account-selector {
       display: flex;
       gap: 4px;
@@ -115,7 +110,6 @@
       box-shadow: 0 3px 8px rgba(0,0,0,0.12);
     }
 
-    /* Dashboard */
     .dashboard-card {
       background: linear-gradient(135deg, #1c1c1e, #2c2c2e);
       color: white;
@@ -140,7 +134,6 @@
       color: rgba(255, 255, 255, 0.9);
     }
 
-    /* Stats Card */
     .stats-card {
       background: var(--surface-solid);
       border: 0.5px solid var(--border);
@@ -155,7 +148,6 @@
     .stat-val.red { color: var(--red); }
     .stat-val.green { color: var(--green); }
 
-    /* Filtres et Recherche */
     .filter-section { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
     .search-bar {
       width: 100%; padding: 10px 14px; border-radius: 12px;
@@ -172,7 +164,6 @@
     }
     .pill.active { background: var(--primary); color: white; }
 
-    /* Liste des Opérations */
     .month-group { margin-bottom: 20px; animation: fadeIn 0.3s ease-in-out; }
     .month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; margin-left: 4px; }
     .ops-list { background: var(--surface-solid); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
@@ -208,7 +199,6 @@
     .op-amount.credit { color: var(--green); }
     .op-date { font-size: 0.75rem; color: var(--text-muted); }
 
-    /* Bouton d'action flottant (FAB) */
     .fab {
       position: fixed;
       bottom: calc(24px + env(safe-area-inset-bottom));
@@ -221,7 +211,6 @@
     .fab:active { transform: scale(0.9); }
     @media (max-width: 480px) { .fab { right: 24px; } }
 
-    /* Modals */
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.4); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
@@ -253,7 +242,7 @@
     .btn-secondary { padding: 12px; background: var(--bg); color: var(--text); border: 0.5px solid var(--border); border-radius: 12px; font-weight: 600; cursor: pointer; }
     .btn-delete { flex: 1; padding: 12px; background: rgba(255, 59, 48, 0.15); color: var(--red); border: 0.5px solid var(--red); border-radius: 12px; font-weight: 700; cursor: pointer; display: none; }
 
-    /* Écran de verrouillage PIN */
+    /* VERROUILLAGE PIN */
     #lockScreen {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: var(--bg); color: var(--text); display: flex; flex-direction: column;
@@ -270,14 +259,13 @@
     }
     .key-btn:active { transform: scale(0.9); background: var(--border); }
 
-    /* Animations Keyframes */
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   </style>
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE PIN UNIQUE -->
+  <!-- ÉCRAN DE VERROUILLAGE PIN -->
   <div id="lockScreen" style="display: none;">
     <h2>🔒 Mes Comptes</h2>
     <p style="color: var(--text-muted); font-size: 0.9rem;">Saisissez votre code PIN</p>
@@ -331,7 +319,7 @@
     </div>
   </div>
 
-  <!-- RÉSUMÉ -->
+  <!-- Résumé -->
   <div class="stats-card" id="statsCard">
     <div class="stats-grid">
       <div class="stat-item">
@@ -345,7 +333,7 @@
     </div>
   </div>
 
-  <!-- RECHERCHE & FILTRES RAPIDES -->
+  <!-- Recherche & Filtres -->
   <div class="filter-section" id="filterSection">
     <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher..." oninput="afficherDonnees()">
     <div class="filter-pills">
@@ -418,10 +406,10 @@
 
         <div class="form-group" id="groupOptions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
-            <input type="checkbox" id="isPrevision"> Opération prévisionnelle (non comptabilisée en solde réel)
+            <input type="checkbox" id="isPrevision"> Opération prévisionnelle
           </label>
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
-            <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente (Onglet Charges)
+            <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente
           </label>
         </div>
 
@@ -433,35 +421,38 @@
     </div>
   </div>
 
-  <!-- CONFIGURATION -->
+  <!-- CONFIGURATION ET MIGRATION/SAUVEGARDE -->
   <div id="configModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Configuration & Options</h2>
+        <h2>Configuration & Sauvegardes</h2>
         <button class="btn-icon" onclick="fermerConfig()">✕</button>
       </div>
 
-      <div class="form-group"><label>Pseudo GitHub</label><input type="text" id="ghUser" class="form-control"></div>
-      <div class="form-group"><label>Nom du Dépôt</label><input type="text" id="ghRepo" class="form-control"></div>
-      <div class="form-group"><label>Personal Access Token</label><input type="password" id="ghToken" class="form-control"></div>
+      <div class="form-group"><label>Pseudo GitHub</label><input type="text" id="ghUser" class="form-control" placeholder="ton-pseudo"></div>
+      <div class="form-group"><label>Nom du Dépôt</label><input type="text" id="ghRepo" class="form-control" placeholder="nom-du-repo"></div>
+      <div class="form-group"><label>Personal Access Token (PAT)</label><input type="password" id="ghToken" class="form-control" placeholder="ghp_xxxxxxxxxxxx"></div>
       
       <div class="form-group">
         <label>Seuil d'alerte Solde Vert (€)</label>
-        <input type="number" id="seuilAlerte" class="form-control" placeholder="ex: 200">
+        <input type="number" id="seuilAlerte" class="form-control" placeholder="200">
       </div>
 
       <div class="form-group">
-        <label>Code PIN (4 chiffres)</label>
-        <input type="password" id="appPin" maxlength="4" placeholder="laisser vide pour désactiver" class="form-control" autocomplete="current-password">
+        <label>Code PIN de verrouillage (4 chiffres)</label>
+        <input type="password" id="appPin" maxlength="4" placeholder="Laisser vide pour désactiver" class="form-control">
       </div>
 
-      <button class="btn-submit" style="width:100%; margin-bottom: 10px;" onclick="sauvegarderConfig()">Enregistrer</button>
+      <button class="btn-submit" style="width:100%; margin-bottom: 12px;" onclick="sauvegarderConfig()">💾 Enregistrer les Réglages</button>
       
       <hr style="border:0; border-top: 0.5px solid var(--border); margin: 16px 0;">
 
+      <h3 style="font-size:0.95rem; margin-bottom:10px;">Gestion des Données Local / Backup</h3>
       <div class="form-group" style="display:flex; flex-direction:column; gap:8px;">
-        <button class="btn-secondary" style="width:100%" onclick="exporterJSON()">📦 Sauvegarde Intégrale (JSON)</button>
-        <button class="btn-secondary" style="width:100%" onclick="exporterCSV()">📥 Exporter toutes les données (CSV)</button>
+        <button class="btn-secondary" style="width:100%" onclick="exporterJSON()">📦 Exporter la Sauvegarde (JSON)</button>
+        <button class="btn-secondary" style="width:100%" onclick="exporterCSV()">📊 Exporter en Tableur (CSV)</button>
+        <button class="btn-secondary" style="width:100%; color:var(--primary);" onclick="document.getElementById('importFileInput').click()">📥 Importer un fichier JSON</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importerJSON(event)">
       </div>
     </div>
   </div>
@@ -478,7 +469,7 @@
       if (savedPin && savedPin.length === 4) {
         document.getElementById('lockScreen').style.display = 'flex';
       } else {
-        chargerDonnees();
+        verifierEtCharger();
       }
     }
 
@@ -489,7 +480,7 @@
         if (enteredPin.length === 4) {
           if (enteredPin === localStorage.getItem('app_pin')) {
             document.getElementById('lockScreen').style.display = 'none';
-            chargerDonnees();
+            verifierEtCharger();
           } else { 
             alert("Code PIN incorrect"); 
             clearPin(); 
@@ -506,6 +497,16 @@
     function updatePinDots() {
       for (let i = 1; i <= 4; i++) {
         document.getElementById(`dot${i}`).className = `dot ${i <= enteredPin.length ? 'filled' : ''}`;
+      }
+    }
+
+    function verifierEtCharger() {
+      const { user, repo, token } = getConfig();
+      if (!user || !repo || !token) {
+        updateSyncStatus('error');
+        ouvrirConfig();
+      } else {
+        chargerDonnees();
       }
     }
 
@@ -655,12 +656,12 @@
       localStorage.setItem('seuil_alerte', document.getElementById('seuilAlerte').value.trim() || '200');
       localStorage.setItem('app_pin', document.getElementById('appPin').value.trim());
       fermerConfig();
-      chargerDonnees();
+      verifierEtCharger();
     }
 
     async function chargerDonnees() {
       const { user, repo, token } = getConfig();
-      if (!user || !repo || !token) { ouvrirConfig(); return; }
+      if (!user || !repo || !token) return;
 
       updateSyncStatus('pending');
       const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?timestamp=${Date.now()}`;
@@ -675,7 +676,7 @@
         afficherDonnees();
       } catch (e) {
         updateSyncStatus('error');
-        alert("Erreur de synchronisation avec GitHub.");
+        alert("Erreur de synchronisation avec GitHub. Vérifiez vos identifiants dans les réglages (⚙️).");
       }
     }
 
@@ -890,22 +891,18 @@
       }
     }
 
+    /* EXPORT & IMPORT JSON / CSV */
     function exporterJSON() {
       const backupData = {
         app_version: "2.1",
         date_export: new Date().toISOString(),
-        config: {
-          gh_user: localStorage.getItem('gh_user') || '',
-          gh_repo: localStorage.getItem('gh_repo') || '',
-          seuil_alerte: localStorage.getItem('seuil_alerte') || '200'
-        },
         data: rawData
       };
 
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `comptes_perso_backup_complet.json`);
+      downloadAnchor.setAttribute("download", `comptes_perso_backup.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -928,16 +925,50 @@
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.setAttribute("href", URL.createObjectURL(blob));
-      link.setAttribute("download", `comptes_perso_export_complet.csv`);
+      link.setAttribute("download", `comptes_perso_export.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
+    function importerJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.data) {
+            rawData = imported.data;
+          } else if (imported.operations) {
+            rawData = imported;
+          } else {
+            throw new Error("Format JSON invalide");
+          }
+
+          if (!rawData.chargesFixes) rawData.chargesFixes = [];
+          
+          if (confirm("Restauration réussie. Souhaitez-vous envoyer ces données sur GitHub ?")) {
+            await pushToGitHub("Importation sauvegarde JSON");
+          } else {
+            afficherDonnees();
+          }
+        } catch (err) {
+          alert("Erreur lors de la lecture du fichier JSON. Assurez-vous d'utiliser un fichier de sauvegarde valide.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
     async function pushToGitHub(commitMessage) {
       const { user, repo, token } = getConfig();
-      const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
+      if (!user || !repo || !token) {
+        ouvrirConfig();
+        return;
+      }
       
+      const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
       updateSyncStatus('pending');
 
       try {
@@ -964,7 +995,7 @@
         }
       } catch (e) {
         updateSyncStatus('error');
-        alert("Erreur de synchronisation avec GitHub.");
+        alert("Erreur de synchronisation avec GitHub. Vérifiez vos identifiants dans les réglages.");
       }
     }
 
