@@ -44,7 +44,7 @@
     .header-actions { display: flex; gap: 4px; }
     .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 6px; }
 
-    /* Sélecteur de Vue Principale / Compte */
+    /* Sélecteur de Vue Principale */
     .account-selector {
       display: flex;
       gap: 4px;
@@ -70,7 +70,7 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    /* Cartes de Solde Séparées */
+    /* Cartes de Solde */
     .dashboard-card {
       color: white;
       padding: 16px 20px;
@@ -92,13 +92,28 @@
     .solde-label { font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
     .solde-main { font-size: 1.8rem; font-weight: 800; margin-top: 4px; }
 
+    /* Capacité d'épargne */
+    .epargne-box {
+      background: #eff6ff;
+      border: 1px dashed #93c5fd;
+      color: #1e40af;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     /* Stats */
     .stats-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .stats-grid { display: flex; justify-content: space-between; }
     .stat-item { text-align: center; flex: 1; }
@@ -107,13 +122,13 @@
     .stat-val.green { color: var(--green); }
 
     /* Filtres & Recherche */
-    .filter-section { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .filter-section { margin-bottom: 16px; }
     .search-bar {
       width: 100%; padding: 10px 14px; border-radius: 10px;
       border: 1px solid var(--border); background: var(--surface); font-size: 0.9rem;
     }
 
-    /* Historique & Liste Charges Fixes */
+    /* Historique */
     .month-group { margin-bottom: 20px; }
     .month-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
     .ops-list { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
@@ -138,6 +153,11 @@
     }
     .btn-action-charge.salary { background: #dbeafe; color: var(--primary); border-color: #93c5fd; }
     .btn-action-charge.prev { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
+    .btn-dup {
+      font-size: 0.7rem; background: var(--bg); border: 1px solid var(--border);
+      padding: 2px 6px; border-radius: 4px; color: var(--text-muted); margin-top: 4px;
+      width: fit-content; cursor: pointer;
+    }
     
     .op-amount-block { text-align: right; }
     .op-amount { font-weight: 700; font-size: 0.95rem; }
@@ -210,7 +230,7 @@
   <!-- ÉCRAN DE VERROUILLAGE -->
   <div id="lockScreen" style="display: none;">
     <h2>🔒 Mes Comptes Perso</h2>
-    <p style="color: #94a3b8; font-size: 0.9rem;">Entrez votre code PIN</p>
+    <p style="color: #94a3b8; font-size: 0.9rem;">Entrez votre code PIN pour déchiffrer</p>
     <div class="pin-dots">
       <div class="dot" id="dot1"></div>
       <div class="dot" id="dot2"></div>
@@ -258,6 +278,12 @@
   <div class="dashboard-card" id="prevCard">
     <div class="solde-label">Solde Prévisionnel (Reste du cycle)</div>
     <div id="soldePrevisionnel" class="solde-main">0,00 €</div>
+  </div>
+
+  <!-- Capacité d'Épargne -->
+  <div class="epargne-box" id="epargneBox">
+    <span>💡 Capacité d'épargne estimée :</span>
+    <span id="capaciteVal" style="font-size:0.95rem; font-weight:800;">0,00 €</span>
   </div>
 
   <!-- RÉSUMÉ -->
@@ -342,10 +368,10 @@
 
         <div class="form-group" id="groupOptions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
-            <input type="checkbox" id="isPrevision"> Opération prévisionnelle (non comptabilisée en solde réel)
+            <input type="checkbox" id="isPrevision"> Opération prévisionnelle
           </label>
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
-            <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente (Onglet Charges)
+            <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente
           </label>
         </div>
 
@@ -370,13 +396,13 @@
       <div class="form-group"><label>Personal Access Token</label><input type="password" id="ghToken" class="form-control"></div>
       
       <div class="form-group">
-        <label>Seuil d'alerte Solde Vert (€)</label>
+        <label>Seuil d'alerte / Sécurité (€)</label>
         <input type="number" id="seuilAlerte" class="form-control" placeholder="ex: 200">
       </div>
 
       <div class="form-group">
-        <label>Code PIN (4 chiffres)</label>
-        <input type="password" id="appPin" maxlength="4" placeholder="laisser vide pour désactiver" class="form-control" autocomplete="current-password">
+        <label>Code PIN (4 chiffres) - *Clé de chiffrement*</label>
+        <input type="password" id="appPin" maxlength="4" placeholder="Requis pour déchiffrer" class="form-control" autocomplete="current-password">
       </div>
 
       <button class="btn-submit" style="width:100%; margin-bottom: 10px;" onclick="sauvegarderConfig()">Enregistrer</button>
@@ -402,6 +428,42 @@
     let activeAccountView = "courant";
     let enteredPin = "";
 
+    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) */
+    async function getKey(pin) {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin.padStart(16, "0")), { name: "PBKDF2" }, false, ["deriveKey"]);
+      return crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: enc.encode("mes_comptes_salt"), iterations: 100000, hash: "SHA-256" },
+        keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+      );
+    }
+
+    async function encryptData(text, pin) {
+      if (!pin) return text;
+      const key = await getKey(pin);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encoded = new TextEncoder().encode(text);
+      const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, encoded);
+      const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+      combined.set(iv, 0);
+      combined.set(new Uint8Array(ciphertext), iv.length);
+      return btoa(String.fromCharCode(...combined));
+    }
+
+    async function decryptData(cipherBase64, pin) {
+      if (!pin) return cipherBase64;
+      try {
+        const key = await getKey(pin);
+        const combined = new Uint8Array(atob(cipherBase64).split('').map(c => c.charCodeAt(0)));
+        const iv = combined.slice(0, 12);
+        const data = combined.slice(12);
+        const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
+        return new TextDecoder().decode(decrypted);
+      } catch (e) {
+        throw new Error("Code PIN invalide ou données altérées.");
+      }
+    }
+
     function initSecurity() {
       const savedPin = localStorage.getItem('app_pin');
       if (savedPin && savedPin.length === 4) {
@@ -411,14 +473,14 @@
       }
     }
 
-    function pressPin(num) {
+    async function pressPin(num) {
       if (enteredPin.length < 4) {
         enteredPin += num;
         updatePinDots();
         if (enteredPin.length === 4) {
           if (enteredPin === localStorage.getItem('app_pin')) {
             document.getElementById('lockScreen').style.display = 'none';
-            chargerDonnees();
+            await chargerDonnees();
           } else { alert("Code PIN incorrect"); clearPin(); }
         }
       }
@@ -439,6 +501,7 @@
       document.getElementById('statsCard').style.display = isFixes ? 'none' : 'block';
       document.getElementById('dashboardCard').style.display = isFixes ? 'none' : 'block';
       document.getElementById('prevCard').style.display = isFixes ? 'none' : 'block';
+      document.getElementById('epargneBox').style.display = (view === 'courant') ? 'flex' : 'none';
 
       const labels = { 'courant': 'Solde Compte Courant', 'livret': 'Solde Livret d\'Épargne' };
       if (!isFixes) document.getElementById('soldeLabel').innerText = labels[view];
@@ -462,6 +525,18 @@
       if (!ym) return '';
       const [year, month] = ym.split('-');
       return `${month}/${year}`;
+    }
+
+    function dupliquerOperation(id) {
+      const op = rawData.operations.find(o => o.id === id);
+      if (!op) return;
+
+      ouvrirModalAjout();
+      document.getElementById('descOp').value = op.description;
+      document.getElementById('montantOp').value = Math.abs(op.montant);
+      document.getElementById('catOp').value = op.categorie || "📦 Autre";
+      document.getElementById('compteOp').value = op.compte || 'courant';
+      setType(op.type);
     }
 
     function ouvrirModalAjout() {
@@ -577,11 +652,22 @@
       try {
         const res = await fetch(url, { headers: { Authorization: `token ${token}` } });
         const file = await res.json();
-        const content = decodeURIComponent(escape(atob(file.content)));
+        let content = decodeURIComponent(escape(atob(file.content)));
+        
+        const pin = localStorage.getItem('app_pin');
+        if (pin && pin.length === 4) {
+          try {
+            content = await decryptData(content, pin);
+          } catch(err) {
+            alert("Erreur de déchiffrement. Vérifiez votre code PIN.");
+            return;
+          }
+        }
+
         rawData = JSON.parse(content);
         if (!rawData.chargesFixes) rawData.chargesFixes = [];
         afficherDonnees();
-      } catch (e) { alert("Erreur de connexion GitHub."); }
+      } catch (e) { alert("Erreur de chargement ou fichier inexistant."); }
     }
 
     function afficherDonnees() {
@@ -601,6 +687,7 @@
       const now = new Date();
       const currentMonthYear = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
       const opsDuCompte = ops.filter(op => (op.compte || 'courant') === activeAccountView);
+      
       opsDuCompte.forEach(op => {
         const val = op.type === 'debit' ? -Math.abs(op.montant) : Math.abs(op.montant);
         
@@ -626,27 +713,22 @@
       document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
       document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
 
-      // Couleur de la Carte Solde Réel
-      const card = document.getElementById('dashboardCard');
+      // Capacité d'épargne (Solde Prévisionnel - Seuil d'Alerte)
       const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
+      const capaciteEpargne = Math.max(0, soldePrevisionnel - seuil);
+      document.getElementById('capaciteVal').innerText = `${capaciteEpargne.toFixed(2)} €`;
 
+      // Couleurs des cartes
+      const card = document.getElementById('dashboardCard');
       card.classList.remove('status-green', 'status-orange', 'status-red');
-      if (soldeActuel >= seuil) {
-        card.classList.add('status-green');
-      } else if (soldeActuel >= 0) {
-        card.classList.add('status-orange');
-      } else {
-        card.classList.add('status-red');
-      }
+      if (soldeActuel >= seuil) card.classList.add('status-green');
+      else if (soldeActuel >= 0) card.classList.add('status-orange');
+      else card.classList.add('status-red');
 
-      // Couleur de la Carte Solde Prévisionnel (Vert si >= 0, Rouge si < 0)
       const prevCard = document.getElementById('prevCard');
       prevCard.classList.remove('status-green', 'status-red');
-      if (soldePrevisionnel >= 0) {
-        prevCard.classList.add('status-green');
-      } else {
-        prevCard.classList.add('status-red');
-      }
+      if (soldePrevisionnel >= 0) prevCard.classList.add('status-green');
+      else prevCard.classList.add('status-red');
 
       document.getElementById('statCredit').innerText = `+${mCredit.toFixed(2)} €`;
       document.getElementById('statDebit').innerText = `-${mDebit.toFixed(2)} €`;
@@ -675,7 +757,10 @@
                 <div class="op-info">
                   <span class="op-desc">${op.description}</span>
                   ${finCreditHtml}
-                  ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider Prévision</button>` : ''}
+                  <div style="display:flex; gap:6px;">
+                    ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
+                    <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+                  </div>
                 </div>
               </div>
               <div class="op-amount-block">
@@ -693,9 +778,7 @@
     function afficherChargesFixes() {
       let charges = rawData.chargesFixes || [];
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-      if (searchQuery) {
-        charges = charges.filter(cf => cf.description.toLowerCase().includes(searchQuery));
-      }
+      if (searchQuery) charges = charges.filter(cf => cf.description.toLowerCase().includes(searchQuery));
 
       let html = `<div class="month-group"><div class="month-title">CHARGES ET REVENUS DU CYCLE</div><div class="ops-list">`;
       charges.forEach(cf => {
@@ -731,9 +814,7 @@
 
     async function annulerValidationFixe(id) {
       const cf = rawData.chargesFixes.find(c => c.id === id);
-      if (!cf) return;
-
-      if (confirm(`Remettre "${cf.description}" en attente de validation ?`)) {
+      if (cf && confirm(`Remettre "${cf.description}" en attente ?`)) {
         cf.valideCeMois = false;
         await pushToGitHub(`Annulation validation : ${cf.description}`);
       }
@@ -770,11 +851,10 @@
       const cf = rawData.chargesFixes.find(c => c.id === id);
       if (!cf) return;
 
-      const sMontant = prompt(`Saisis le montant exact de ton salaire ce mois-ci (€) :`, cf.montant);
+      const sMontant = prompt(`Saisis le montant exact du salaire (€) :`, cf.montant);
       if (!sMontant) return;
 
       const montantExact = parseFloat(sMontant);
-
       rawData.operations.push({
         id: Date.now().toString(),
         date: new Date().toISOString().slice(0, 10),
@@ -786,10 +866,8 @@
         isPrevision: false
       });
 
-      if (confirm("Le salaire est enregistré ! Veux-tu réinitialiser les charges fixes pour lancer le NOUVEAU MOIS ?")) {
-        rawData.chargesFixes.forEach(c => {
-          c.valideCeMois = (c.id === id);
-        });
+      if (confirm("Réinitialiser les charges fixes pour lancer le NOUVEAU MOIS ?")) {
+        rawData.chargesFixes.forEach(c => c.valideCeMois = (c.id === id));
       } else {
         cf.valideCeMois = true;
       }
@@ -798,9 +876,10 @@
     }
 
     async function supprimerChargeFixe(id) {
-      if (!confirm("Supprimer cette charge fixe récurrente ?")) return;
-      rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
-      await pushToGitHub("Suppression charge fixe");
+      if (confirm("Supprimer cette charge fixe ?")) {
+        rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
+        await pushToGitHub("Suppression charge fixe");
+      }
     }
 
     async function supprimerOperation() {
@@ -812,14 +891,6 @@
         rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
         await pushToGitHub("Suppression charge fixe");
       } else {
-        const opASupprimer = rawData.operations.find(o => o.id === id);
-        if (opASupprimer) {
-          const cfAssociee = rawData.chargesFixes.find(c => c.description.toLowerCase() === opASupprimer.description.toLowerCase());
-          if (cfAssociee) {
-            cfAssociee.valideCeMois = false;
-          }
-        }
-
         rawData.operations = rawData.operations.filter(o => o.id !== id);
         await pushToGitHub("Suppression opération");
       }
@@ -827,7 +898,7 @@
 
     function exporterJSON() {
       const backupData = {
-        app_version: "2.0",
+        app_version: "3.0",
         date_export: new Date().toISOString(),
         config: {
           gh_user: localStorage.getItem('gh_user') || '',
@@ -842,7 +913,7 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `comptes_perso_sauvegarde_integrale.json`);
+      downloadAnchor.setAttribute("download", `comptes_perso_sauvegarde.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -856,15 +927,8 @@
       reader.onload = async function(e) {
         try {
           const imported = JSON.parse(e.target.result);
-
-          if (!imported.data || !imported.config) {
-            alert("Format de fichier invalide.");
-            return;
-          }
-
-          if (!confirm("Voulez-vous remplacer vos paramètres et vos données actuelles par cette sauvegarde ?")) {
-            return;
-          }
+          if (!imported.data || !imported.config) return alert("Format de fichier invalide.");
+          if (!confirm("Remplacer vos données actuelles par cette sauvegarde ?")) return;
 
           if (imported.config.gh_user) localStorage.setItem('gh_user', imported.config.gh_user);
           if (imported.config.gh_repo) localStorage.setItem('gh_repo', imported.config.gh_repo);
@@ -875,14 +939,11 @@
           rawData = imported.data;
           if (!rawData.chargesFixes) rawData.chargesFixes = [];
 
-          await pushToGitHub("Restauration complète depuis fichier JSON");
-
+          await pushToGitHub("Restauration complète depuis JSON");
           alert("Restauration réussie !");
           fermerConfig();
           location.reload();
-        } catch (err) {
-          alert("Erreur lors de la lecture du fichier JSON : " + err.message);
-        }
+        } catch (err) { alert("Erreur lors de l'import : " + err.message); }
       };
       reader.readAsText(file);
     }
@@ -890,13 +951,11 @@
     function exporterCSV() {
       let ops = rawData.operations || [];
       let charges = rawData.chargesFixes || [];
-
       let csv = "TypeDonnee;ID;Date;Type;Compte;Categorie;Description;Montant;Prevision;FinCredit\n";
 
       ops.forEach(o => {
         csv += `"OPERATION";"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant};"${o.isPrevision ? 'OUI' : 'NON'}";"${o.dateFinCredit || ''}"\n`;
       });
-
       charges.forEach(c => {
         csv += `"CHARGE_FIXE";"${c.id}";"Récurrente";"${c.type}";"courant";"${c.categorie || ''}";"${c.description}";${c.montant};"NON";"${c.dateFinCredit || ''}"\n`;
       });
@@ -904,7 +963,7 @@
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.setAttribute("href", URL.createObjectURL(blob));
-      link.setAttribute("download", `comptes_perso_export_complet.csv`);
+      link.setAttribute("download", `comptes_perso_export.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -918,14 +977,22 @@
       if (!getRes.ok) return alert("Erreur d'accès à GitHub");
       const fileData = await getRes.json();
 
-      const nouveauContenuJSON = JSON.stringify(rawData, null, 2);
-      const contentBase64 = btoa(unescape(encodeURIComponent(nouveauContenuJSON)));
+      let textJSON = JSON.stringify(rawData, null, 2);
+      const pin = localStorage.getItem('app_pin');
+      
+      // Chiffrement si un PIN est défini
+      if (pin && pin.length === 4) {
+        textJSON = await encryptData(textJSON, pin);
+      }
+
+      const contentBase64 = btoa(unescape(encodeURIComponent(textJSON)));
 
       const putRes = await fetch(url, {
         method: 'PUT',
         headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: commitMessage, content: contentBase64, sha: fileData.sha })
       });
+
       if (putRes.ok) {
         fermerModalOp();
         afficherDonnees();
