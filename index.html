@@ -772,10 +772,14 @@
         categorie: cf.categorie,
         isPrevision: false
       });
-      cf.valideCeMois = true;
 
-      if (confirm("Le salaire est enregistré ! Veux-tu réinitialiser toutes les charges fixes pour lancer le NOUVEAU MOIS ?")) {
-        rawData.chargesFixes.forEach(c => c.valideCeMois = false);
+      if (confirm("Le salaire est enregistré ! Veux-tu réinitialiser les charges fixes pour lancer le NOUVEAU MOIS ?")) {
+        // Réinitialise toutes les charges, SAUF le salaire qu'on vient de valider
+        rawData.chargesFixes.forEach(c => {
+          c.valideCeMois = (c.id === id);
+        });
+      } else {
+        cf.valideCeMois = true;
       }
 
       await pushToGitHub(`Réception Salaire : ${montantExact} €`);
@@ -844,18 +848,15 @@
             return;
           }
 
-          // Restauration des configurations locales (dont le Token GitHub)
           if (imported.config.gh_user) localStorage.setItem('gh_user', imported.config.gh_user);
           if (imported.config.gh_repo) localStorage.setItem('gh_repo', imported.config.gh_repo);
           if (imported.config.gh_token) localStorage.setItem('gh_token', imported.config.gh_token);
           if (imported.config.seuil_alerte) localStorage.setItem('seuil_alerte', imported.config.seuil_alerte);
           if (imported.config.app_pin !== undefined) localStorage.setItem('app_pin', imported.config.app_pin);
 
-          // Restauration des données financières dans l'app
           rawData = imported.data;
           if (!rawData.chargesFixes) rawData.chargesFixes = [];
 
-          // Envoi immédiat des données importées vers GitHub
           await pushToGitHub("Restauration complète depuis fichier JSON");
 
           alert("Restauration réussie !");
