@@ -72,7 +72,7 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    /* Dashboard */
+    /* Dashboard de base et variations dynamiques de couleur */
     .dashboard-card {
       background: linear-gradient(135deg, #1e293b, #0f172a);
       color: white;
@@ -80,16 +80,27 @@
       border-radius: var(--radius);
       box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
       margin-bottom: 20px;
+      transition: background 0.3s ease;
     }
-    .solde-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .dashboard-card.status-green {
+      background: linear-gradient(135deg, #15803d, #166534) !important;
+    }
+    .dashboard-card.status-orange {
+      background: linear-gradient(135deg, #d97706, #b45309) !important;
+    }
+    .dashboard-card.status-red {
+      background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+    }
+
+    .solde-label { font-size: 0.8rem; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.5px; }
     .solde-main { font-size: 2.1rem; font-weight: 800; margin: 4px 0 12px 0; }
     .solde-prev-container {
-      border-top: 1px solid #334155;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
       padding-top: 10px;
       display: flex;
       justify-content: space-between;
       font-size: 0.85rem;
-      color: #cbd5e1;
+      color: rgba(255, 255, 255, 0.9);
     }
 
     /* Stats */
@@ -197,6 +208,7 @@
 </head>
 <body>
 
+  <!-- ÉCRAN DE VERROUILLAGE -->
   <div id="lockScreen" style="display: none;">
     <h2>🔒 Mes Comptes Perso</h2>
     <p style="color: #94a3b8; font-size: 0.9rem;">Entrez votre code PIN</p>
@@ -230,12 +242,14 @@
     </div>
   </div>
 
+  <!-- Sélecteur de vue -->
   <div class="account-selector">
     <div class="account-tab active" id="tab-courant" onclick="selectAccountView('courant')">💳 Courant</div>
     <div class="account-tab" id="tab-livret" onclick="selectAccountView('livret')">🐷 Livret</div>
     <div class="account-tab" id="tab-fixes" onclick="selectAccountView('fixes')">📅 Charges Fixes</div>
   </div>
 
+  <!-- Dashboard avec fond dynamique -->
   <div class="dashboard-card" id="dashboardCard">
     <div class="solde-label" id="soldeLabel">Solde Compte Courant</div>
     <div id="soldeActuel" class="solde-main">0,00 €</div>
@@ -245,6 +259,7 @@
     </div>
   </div>
 
+  <!-- RÉSUMÉ & GRAPHIQUE -->
   <div class="stats-card" id="statsCard">
     <div class="stats-grid">
       <div class="stat-item">
@@ -261,6 +276,7 @@
     </div>
   </div>
 
+  <!-- RECHERCHE -->
   <div class="filter-section" id="filterSection">
     <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher..." oninput="afficherDonnees()">
   </div>
@@ -269,6 +285,7 @@
 
   <button class="fab" id="fabAdd" onclick="ouvrirModalAjout()">+</button>
 
+  <!-- MODAL OPÉRATION -->
   <div id="opModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -320,6 +337,7 @@
           <input type="date" id="dateOp" class="form-control">
         </div>
 
+        <!-- OPTIONS DE PRÉVISION ET CHARGE FIXE -->
         <div class="form-group" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
             <input type="checkbox" id="isPrevision"> Opération prévisionnelle (non comptabilisée en solde réel)
@@ -337,6 +355,7 @@
     </div>
   </div>
 
+  <!-- CONFIGURATION -->
   <div id="configModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -348,6 +367,11 @@
       <div class="form-group"><label>Nom du Dépôt</label><input type="text" id="ghRepo" class="form-control"></div>
       <div class="form-group"><label>Personal Access Token</label><input type="password" id="ghToken" class="form-control"></div>
       
+      <div class="form-group">
+        <label>Seuil d'alerte Solde Vert (€)</label>
+        <input type="number" id="seuilAlerte" class="form-control" placeholder="ex: 200">
+      </div>
+
       <div class="form-group">
         <label>Code PIN (4 chiffres)</label>
         <input type="password" id="appPin" maxlength="4" placeholder="laisser vide pour désactiver" class="form-control" autocomplete="current-password">
@@ -456,11 +480,13 @@
     }
 
     function fermerModalOp() { document.getElementById('opModal').classList.remove('open'); }
+    
     function ouvrirConfig() {
       const { user, repo, token } = getConfig();
       document.getElementById('ghUser').value = user || '';
       document.getElementById('ghRepo').value = repo || '';
       document.getElementById('ghToken').value = token || '';
+      document.getElementById('seuilAlerte').value = localStorage.getItem('seuil_alerte') || '200';
       document.getElementById('appPin').value = localStorage.getItem('app_pin') || '';
       document.getElementById('configModal').classList.add('open');
     }
@@ -478,6 +504,7 @@
       localStorage.setItem('gh_user', document.getElementById('ghUser').value.trim());
       localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
       localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
+      localStorage.setItem('seuil_alerte', document.getElementById('seuilAlerte').value.trim() || '200');
       localStorage.setItem('app_pin', document.getElementById('appPin').value.trim());
       fermerConfig();
       chargerDonnees();
@@ -542,6 +569,21 @@
 
       document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
       document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
+
+      // --- GESTION DYNAMIQUE DE LA COULEUR DU DASHBOARD ---
+      const card = document.getElementById('dashboardCard');
+      const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
+
+      card.classList.remove('status-green', 'status-orange', 'status-red');
+
+      if (soldeActuel >= seuil) {
+        card.classList.add('status-green');
+      } else if (soldeActuel >= 0) {
+        card.classList.add('status-orange');
+      } else {
+        card.classList.add('status-red');
+      }
+
       document.getElementById('statCredit').innerText = `+${mCredit.toFixed(2)} €`;
       document.getElementById('statDebit').innerText = `-${mDebit.toFixed(2)} €`;
 
