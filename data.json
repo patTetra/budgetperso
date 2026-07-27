@@ -206,6 +206,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137911595",
+      "description": "Abo Pixpay ",
+      "montant": 3.99,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
