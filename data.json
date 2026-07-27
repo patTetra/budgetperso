@@ -13,9 +13,10 @@
     {
       "id": "4",
       "description": "Salaire",
-      "montant": 2000,
-      "type": "credit",
+      "montant": 2681,
       "categorie": "💼 Salaire",
+      "type": "credit",
+      "compte": "courant",
       "valideCeMois": false
     },
     {
