@@ -147,7 +147,7 @@
       "categorie": "🚗 Transport",
       "type": "debit",
       "compte": "courant",
-      "valideCeMois": true
+      "valideCeMois": false
     },
     {
       "id": "1785137710751",
