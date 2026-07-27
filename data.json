@@ -42,6 +42,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137418393",
+      "description": "Épargne Amazon music",
+      "montant": 13.25,
+      "categorie": "🏦 Épargne",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
