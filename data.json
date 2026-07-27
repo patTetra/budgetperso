@@ -17,7 +17,7 @@
       "categorie": "💼 Salaire",
       "type": "credit",
       "compte": "courant",
-      "valideCeMois": true
+      "valideCeMois": false
     },
     {
       "id": "1785137361424",
