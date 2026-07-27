@@ -655,7 +655,9 @@
         let content = decodeURIComponent(escape(atob(file.content)));
         
         const pin = localStorage.getItem('app_pin');
-        if (pin && pin.length === 4) {
+        
+        // Ne déchiffre que si le contenu n'est pas déjà du JSON en clair (commençant par '{')
+        if (pin && pin.length === 4 && !content.trim().startsWith('{')) {
           try {
             content = await decryptData(content, pin);
           } catch(err) {
