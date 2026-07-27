@@ -78,6 +78,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137517704",
+      "description": "Assurance Tesla",
+      "montant": 89.78,
+      "categorie": "📄 Assurance",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
