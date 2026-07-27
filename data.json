@@ -147,15 +147,6 @@
       "valideCeMois": false
     },
     {
-      "id": "1785137712593",
-      "description": "Prêt Maroc",
-      "montant": 100,
-      "categorie": "🏠 Logement",
-      "type": "debit",
-      "compte": "courant",
-      "valideCeMois": false
-    },
-    {
       "id": "1785137739343",
       "description": "Coiffeur ",
       "montant": 22,
