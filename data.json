@@ -134,6 +134,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137710751",
+      "description": "Prêt Maroc",
+      "montant": 100,
+      "categorie": "🏠 Logement",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
