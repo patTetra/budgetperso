@@ -116,6 +116,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137671746",
+      "description": "Free Manon",
+      "montant": 2,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
