@@ -1,1 +1,218 @@
-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
+{
+  "operations": [
+    {
+      "id": "1785165744999",
+      "date": "2026-07-27",
+      "compte": "courant",
+      "description": "Tessie",
+      "montant": 4.99,
+      "type": "debit",
+      "categorie": "🚗 Transport",
+      "dateFinCredit": null,
+      "isPrevision": false
+    }
+  ],
+  "chargesFixes": [
+    {
+      "id": "1",
+      "description": "Prêt Maison",
+      "montant": 575,
+      "categorie": "🏠 Logement",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "4",
+      "description": "Salaire",
+      "montant": 2681,
+      "categorie": "💼 Salaire",
+      "type": "credit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137361424",
+      "description": "Taxe foncière ",
+      "montant": 30,
+      "categorie": "🏠 Logement",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137418393",
+      "description": "Épargne Amazon music",
+      "montant": 13.25,
+      "categorie": "🏦 Épargne",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137439514",
+      "description": "Maaf",
+      "montant": 85.65,
+      "categorie": "📄 Assurance",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137464296",
+      "description": "Orange",
+      "montant": 13.99,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137484899",
+      "description": "iCloud ",
+      "montant": 9.99,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137517704",
+      "description": "Assurance Tesla",
+      "montant": 89.78,
+      "categorie": "📄 Assurance",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137550235",
+      "description": "Arlo",
+      "montant": 3.99,
+      "categorie": "🏠 Logement",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137568556",
+      "description": "Courses du mois",
+      "montant": 260,
+      "categorie": "🛒 Alimentation",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137604938",
+      "description": "Prêt Tesla ",
+      "montant": 490.16,
+      "categorie": "🏠 Logement",
+      "dateFinCredit": "2031-03",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137628237",
+      "description": "Tesla premium",
+      "montant": 9.99,
+      "categorie": "🚗 Transport",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137655372",
+      "description": "Épargne pneus ",
+      "montant": 50,
+      "categorie": "🏦 Épargne",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137671746",
+      "description": "Free Manon",
+      "montant": 2,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137688920",
+      "description": "Tessie",
+      "montant": 4.99,
+      "categorie": "🚗 Transport",
+      "dateFinCredit": null,
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": true
+    },
+    {
+      "id": "1785137710751",
+      "description": "Prêt Maroc",
+      "montant": 100,
+      "categorie": "🏠 Logement",
+      "dateFinCredit": "2029-02",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137739343",
+      "description": "Coiffeur ",
+      "montant": 22,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137784703",
+      "description": "Cantine",
+      "montant": 80,
+      "categorie": "📦 Autre",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137819384",
+      "description": "Coca sodastream ",
+      "montant": 25.59,
+      "categorie": "🛒 Alimentation",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137865007",
+      "description": "Café",
+      "montant": 11.99,
+      "categorie": "🛒 Alimentation",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137891692",
+      "description": "Argent de poche Manon",
+      "montant": 20,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    },
+    {
+      "id": "1785137911595",
+      "description": "Abo Pixpay ",
+      "montant": 3.99,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
+    }
+  ]
+}
