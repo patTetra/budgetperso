@@ -197,6 +197,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137891692",
+      "description": "Argent de poche Manon",
+      "montant": 20,
+      "categorie": "🎉 Loisirs",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
