@@ -41,8 +41,29 @@
       margin-bottom: 12px;
     }
     .header h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
-    .header-actions { display: flex; gap: 4px; }
+    .header-actions { display: flex; align-items: center; gap: 4px; }
     .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 6px; }
+
+    /* LED de Statut de mise à jour */
+    .sync-status-led {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #94a3b8;
+      display: inline-block;
+      margin-right: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      transition: background 0.3s ease;
+    }
+    .sync-status-led.green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .sync-status-led.orange { background: #d97706; box-shadow: 0 0 8px #d97706; animation: pulse 1s infinite; }
+    .sync-status-led.red { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
 
     /* Sélecteur de Vue Principale */
     .account-selector {
@@ -128,16 +149,40 @@
       border: 1px solid var(--border); background: var(--surface); font-size: 0.9rem;
     }
 
-    /* Historique */
+    /* Historique & Swipe */
     .month-group { margin-bottom: 20px; }
     .month-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
     .ops-list { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    
+    .operation-wrapper {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+    .operation-wrapper:last-child { border-bottom: none; }
+
+    .swipe-delete-bg {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 80px;
+      background: var(--red);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      z-index: 1;
+    }
+
     .operation-item {
       display: flex; justify-content: space-between; align-items: center;
       padding: 12px 14px;
-      border-bottom: 1px solid var(--border); cursor: pointer;
+      background: var(--surface);
+      position: relative;
+      z-index: 2;
+      transition: transform 0.2s ease;
+      cursor: pointer;
     }
-    .operation-item:last-child { border-bottom: none; }
     .operation-item.is-prevision { opacity: 0.65; background-color: #f8fafc; }
     .op-left { display: flex; align-items: center; gap: 10px; }
     .op-cat-icon { font-size: 1.3rem; background: var(--bg); padding: 8px; border-radius: 10px; }
@@ -254,7 +299,10 @@
   </div>
 
   <div class="header">
-    <h1>Mes Comptes</h1>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span id="syncLed" class="sync-status-led" title="Statut synchro GitHub"></span>
+      <h1>Mes Comptes</h1>
+    </div>
     <div class="header-actions">
       <button class="btn-icon" title="Rafraîchir" onclick="chargerDonnees()">🔄</button>
       <button class="btn-icon" title="Réglages" onclick="ouvrirConfig()">⚙️</button>
@@ -428,7 +476,12 @@
     let activeAccountView = "courant";
     let enteredPin = "";
 
-    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) AVEC LE SEL CORRIGÉ (_v2) */
+    function setSyncStatus(status) {
+      const led = document.getElementById('syncLed');
+      led.className = `sync-status-led ${status}`;
+    }
+
+    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) */
     async function getKey(pin) {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin.padStart(16, "0")), { name: "PBKDF2" }, false, ["deriveKey"]);
@@ -648,19 +701,21 @@
       const { user, repo, token } = getConfig();
       if (!user || !repo || !token) { ouvrirConfig(); return; }
 
+      setSyncStatus('orange');
       const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?timestamp=${Date.now()}`;
       try {
         const res = await fetch(url, { headers: { Authorization: `token ${token}` } });
+        if (!res.ok) throw new Error("Erreur réseau");
         const file = await res.json();
         let content = decodeURIComponent(escape(atob(file.content)));
         
         const pin = localStorage.getItem('app_pin');
         
-        // Ne déchiffre que si le contenu n'est pas déjà du JSON en clair (commençant par '{')
         if (pin && pin.length === 4 && !content.trim().startsWith('{')) {
           try {
             content = await decryptData(content, pin);
           } catch(err) {
+            setSyncStatus('red');
             alert("Erreur de déchiffrement. Vérifiez votre code PIN.");
             return;
           }
@@ -668,8 +723,12 @@
 
         rawData = JSON.parse(content);
         if (!rawData.chargesFixes) rawData.chargesFixes = [];
+        setSyncStatus('green');
         afficherDonnees();
-      } catch (e) { alert("Erreur de chargement ou fichier inexistant."); }
+      } catch (e) {
+        setSyncStatus('red');
+        alert("Erreur de chargement ou fichier inexistant.");
+      }
     }
 
     function afficherDonnees() {
@@ -715,12 +774,10 @@
       document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
       document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
 
-      // Capacité d'épargne (Solde Prévisionnel - Seuil d'Alerte)
       const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
       const capaciteEpargne = Math.max(0, soldePrevisionnel - seuil);
       document.getElementById('capaciteVal').innerText = `${capaciteEpargne.toFixed(2)} €`;
 
-      // Couleurs des cartes
       const card = document.getElementById('dashboardCard');
       card.classList.remove('status-green', 'status-orange', 'status-red');
       if (soldeActuel >= seuil) card.classList.add('status-green');
@@ -753,21 +810,34 @@
           const icon = (op.categorie || "📦").split(' ')[0];
           const finCreditHtml = op.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(op.dateFinCredit)}</span>` : '';
           html += `
-            <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" onclick="ouvrirModalEdition('${op.id}')">
-              <div class="op-left">
-                <span class="op-cat-icon">${icon}</span>
-                <div class="op-info">
-                  <span class="op-desc">${op.description}</span>
-                  ${finCreditHtml}
-                  <div style="display:flex; gap:6px;">
-                    ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
-                    <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+            <div class="operation-wrapper">
+              <div class="swipe-delete-bg">🗑️</div>
+              <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" 
+                   onclick="ouvrirModalEdition('${op.id}')"
+                   data-id="${op.id}"
+                   data-type="operation"
+                   ontouchstart="handleTouchStart(event)" 
+                   ontouchmove="handleTouchMove(event)" 
+                   ontouchend="handleTouchEnd(event)"
+                   onmousedown="handleMouseDown(event)"
+                   onmousemove="handleMouseMove(event)"
+                   onmouseup="handleMouseUp(event)"
+                   onmouseleave="handleMouseLeave(event)">
+                <div class="op-left">
+                  <span class="op-cat-icon">${icon}</span>
+                  <div class="op-info">
+                    <span class="op-desc">${op.description}</span>
+                    ${finCreditHtml}
+                    <div style="display:flex; gap:6px;">
+                      ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
+                      <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="op-amount-block">
-                <div class="op-amount ${op.type}">${op.type === 'debit' ? '-' : '+'} ${Math.abs(op.montant).toFixed(2)} €</div>
-                <div class="op-date">${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</div>
+                <div class="op-amount-block">
+                  <div class="op-amount ${op.type}">${op.type === 'debit' ? '-' : '+'} ${Math.abs(op.montant).toFixed(2)} €</div>
+                  <div class="op-date">${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</div>
+                </div>
               </div>
             </div>`;
         });
@@ -789,29 +859,135 @@
         const finCreditHtml = cf.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(cf.dateFinCredit)}</span>` : '';
         
         html += `
-          <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.6;' : ''}" onclick="ouvrirModalEditionCharge('${cf.id}')">
-            <div class="op-left">
-              <span class="op-cat-icon">${icon}</span>
-              <div class="op-info">
-                <span class="op-desc">${cf.description}</span>
-                ${finCreditHtml}
-                ${cf.valideCeMois ? 
-                  `<span style="font-size:0.65rem; color:var(--green); font-weight:bold;">✅ Passé ce mois 
-                     <button type="button" style="margin-left:6px; font-size:0.65rem; background:none; border:none; color:var(--red); text-decoration:underline; cursor:pointer;" onclick="event.stopPropagation(); annulerValidationFixe('${cf.id}')">(Annuler)</button>
-                   </span>` : 
-                  (estSalaire ? `<button type="button" class="btn-action-charge salary" onclick="event.stopPropagation(); validerSalaire('${cf.id}')">💰 Valider Salaire</button>` :
-                  `<button type="button" class="btn-action-charge" onclick="event.stopPropagation(); validerChargeFixe('${cf.id}')">⚡ Valider</button>`)}
+          <div class="operation-wrapper">
+            <div class="swipe-delete-bg">🗑️</div>
+            <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.6;' : ''}" 
+                 onclick="ouvrirModalEditionCharge('${cf.id}')"
+                 data-id="${cf.id}"
+                 data-type="charge"
+                 ontouchstart="handleTouchStart(event)" 
+                 ontouchmove="handleTouchMove(event)" 
+                 ontouchend="handleTouchEnd(event)"
+                 onmousedown="handleMouseDown(event)"
+                 onmousemove="handleMouseMove(event)"
+                 onmouseup="handleMouseUp(event)"
+                 onmouseleave="handleMouseLeave(event)">
+              <div class="op-left">
+                <span class="op-cat-icon">${icon}</span>
+                <div class="op-info">
+                  <span class="op-desc">${cf.description}</span>
+                  ${finCreditHtml}
+                  ${cf.valideCeMois ? 
+                    `<span style="font-size:0.65rem; color:var(--green); font-weight:bold;">✅ Passé ce mois 
+                       <button type="button" style="margin-left:6px; font-size:0.65rem; background:none; border:none; color:var(--red); text-decoration:underline; cursor:pointer;" onclick="event.stopPropagation(); annulerValidationFixe('${cf.id}')">(Annuler)</button>
+                     </span>` : 
+                    (estSalaire ? `<button type="button" class="btn-action-charge salary" onclick="event.stopPropagation(); validerSalaire('${cf.id}')">💰 Valider Salaire</button>` :
+                    `<button type="button" class="btn-action-charge" onclick="event.stopPropagation(); validerChargeFixe('${cf.id}')">⚡ Valider</button>`)}
+                </div>
               </div>
-            </div>
-            <div class="op-amount-block">
-              <div class="op-amount ${cf.type}">${cf.type === 'debit' ? '-' : '+'} ${Math.abs(cf.montant).toFixed(2)} €</div>
-              <div class="op-date" onclick="event.stopPropagation(); supprimerChargeFixe('${cf.id}')" style="cursor:pointer; color:var(--red); margin-top:4px;">🗑️</div>
+              <div class="op-amount-block">
+                <div class="op-amount ${cf.type}">${cf.type === 'debit' ? '-' : '+'} ${Math.abs(cf.montant).toFixed(2)} €</div>
+                <div class="op-date" onclick="event.stopPropagation(); supprimerChargeFixe('${cf.id}')" style="cursor:pointer; color:var(--red); margin-top:4px;">🗑️</div>
+              </div>
             </div>
           </div>`;
       });
 
       html += `</div></div>`;
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune charge fixe enregistrée.</p>";
+    }
+
+    /* GESTION DU GESTE SWIPE (Glissement pour supprimer) */
+    let touchStartX = 0;
+    let currentX = 0;
+    let activeItem = null;
+    let isSwiping = false;
+
+    function handleTouchStart(e) {
+      touchStartX = e.touches[0].clientX;
+      activeItem = e.currentTarget;
+      isSwiping = false;
+    }
+
+    function handleTouchMove(e) {
+      if (!activeItem) return;
+      currentX = e.touches[0].clientX;
+      let diff = currentX - touchStartX;
+      if (diff < -15) isSwiping = true;
+      if (diff < 0 && diff > -100) {
+        activeItem.style.transform = `translateX(${diff}px)`;
+      }
+    }
+
+    function handleTouchEnd(e) {
+      if (!activeItem) return;
+      let diff = currentX - touchStartX;
+      if (diff < -70) {
+        // Déclencher la suppression par swipe
+        activeItem.style.transform = `translateX(-100%)`;
+        const id = activeItem.getAttribute('data-id');
+        const type = activeItem.getAttribute('data-type');
+        setTimeout(() => confirmerSwipeSuppression(id, type), 200);
+      } else {
+        activeItem.style.transform = `translateX(0px)`;
+      }
+      activeItem = null;
+    }
+
+    // Support Souris pour le test sur desktop
+    let mouseStartX = 0;
+    let isMouseDown = false;
+    let activeMouseItem = null;
+
+    function handleMouseDown(e) {
+      mouseStartX = e.clientX;
+      activeMouseItem = e.currentTarget;
+      isMouseDown = true;
+    }
+
+    function handleMouseMove(e) {
+      if (!isMouseDown || !activeMouseItem) return;
+      let diff = e.clientX - mouseStartX;
+      if (diff < 0 && diff > -100) {
+        activeMouseItem.style.transform = `translateX(${diff}px)`;
+      }
+    }
+
+    function handleMouseUp(e) {
+      if (!isMouseDown || !activeMouseItem) return;
+      let diff = e.clientX - mouseStartX;
+      if (diff < -70) {
+        activeMouseItem.style.transform = `translateX(-100%)`;
+        const id = activeMouseItem.getAttribute('data-id');
+        const type = activeMouseItem.getAttribute('data-type');
+        setTimeout(() => confirmerSwipeSuppression(id, type), 200);
+      } else {
+        activeMouseItem.style.transform = `translateX(0px)`;
+      }
+      isMouseDown = false;
+      activeMouseItem = null;
+    }
+
+    function handleMouseLeave(e) {
+      if (isMouseDown && activeMouseItem) {
+        activeMouseItem.style.transform = `translateX(0px)`;
+        isMouseDown = false;
+        activeMouseItem = null;
+      }
+    }
+
+    async function confirmerSwipeSuppression(id, type) {
+      if (confirm("Confirmer la suppression de cet élément ?")) {
+        if (type === 'charge') {
+          rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
+          await pushToGitHub("Suppression charge fixe (Swipe)");
+        } else {
+          rawData.operations = rawData.operations.filter(o => o.id !== id);
+          await pushToGitHub("Suppression opération (Swipe)");
+        }
+      } else {
+        afficherDonnees(); // Remet en place si annulé
+      }
     }
 
     async function annulerValidationFixe(id) {
@@ -900,7 +1076,7 @@
 
     function exporterJSON() {
       const backupData = {
-        app_version: "3.0",
+        app_version: "3.1",
         date_export: new Date().toISOString(),
         config: {
           gh_user: localStorage.getItem('gh_user') || '',
@@ -975,14 +1151,17 @@
       const { user, repo, token } = getConfig();
       const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
       
+      setSyncStatus('orange');
       const getRes = await fetch(url, { headers: { Authorization: `token ${token}` } });
-      if (!getRes.ok) return alert("Erreur d'accès à GitHub");
+      if (!getRes.ok) {
+        setSyncStatus('red');
+        return alert("Erreur d'accès à GitHub");
+      }
       const fileData = await getRes.json();
 
       let textJSON = JSON.stringify(rawData, null, 2);
       const pin = localStorage.getItem('app_pin');
       
-      // Chiffrement si un PIN est défini
       if (pin && pin.length === 4) {
         textJSON = await encryptData(textJSON, pin);
       }
@@ -996,10 +1175,14 @@
       });
 
       if (putRes.ok) {
+        setSyncStatus('green');
         fermerModalOp();
         afficherDonnees();
         setTimeout(chargerDonnees, 1500);
-      } else { alert("Erreur de mise à jour sur GitHub."); }
+      } else {
+        setSyncStatus('red');
+        alert("Erreur de mise à jour sur GitHub.");
+      }
     }
 
     async function sauvegarderOperation(e) {
