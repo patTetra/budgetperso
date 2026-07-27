@@ -8,8 +8,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Mes Comptes Perso</title>
-  
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
@@ -111,12 +109,11 @@
       padding: 16px;
       margin-bottom: 20px;
     }
-    .stats-grid { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .stats-grid { display: flex; justify-content: space-between; }
     .stat-item { text-align: center; flex: 1; }
     .stat-val { font-weight: 700; font-size: 1.1rem; margin-top: 2px; }
     .stat-val.red { color: var(--red); }
     .stat-val.green { color: var(--green); }
-    .chart-container { height: 130px; width: 100%; }
 
     /* Filtres & Recherche */
     .filter-section { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
@@ -131,7 +128,8 @@
     .ops-list { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
     .operation-item {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border); cursor: pointer;
     }
     .operation-item:last-child { border-bottom: none; }
     .operation-item.is-prevision { opacity: 0.65; background-color: #f8fafc; }
@@ -141,8 +139,10 @@
     .op-desc { font-weight: 600; font-size: 0.9rem; }
     
     .btn-action-charge {
-      font-size: 0.75rem; background: #dcfce7; color: var(--green); border: 1px solid #86efac;
-      padding: 4px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 4px; width: fit-content;
+      font-size: 0.75rem;
+      background: #dcfce7; color: var(--green); border: 1px solid #86efac;
+      padding: 4px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 4px;
+      width: fit-content;
     }
     .btn-action-charge.salary { background: #dbeafe; color: var(--primary); border-color: #93c5fd; }
     .btn-action-charge.prev { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
@@ -155,18 +155,22 @@
 
     /* FAB */
     .fab {
-      position: fixed; bottom: 24px; right: calc(50% - 220px); width: 56px; height: 56px;
+      position: fixed;
+      bottom: 24px; right: calc(50% - 220px); width: 56px; height: 56px;
       border-radius: 50%; background: var(--primary); color: white; border: none;
-      font-size: 1.8rem; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); cursor: pointer;
+      font-size: 1.8rem;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); cursor: pointer;
       display: flex; align-items: center; justify-content: center; z-index: 90;
     }
     @media (max-width: 480px) { .fab { right: 24px; } }
 
     /* Modals */
     .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px);
-      display: none; align-items: flex-end; justify-content: center; z-index: 100;
+      display: none; align-items: flex-end;
+      justify-content: center; z-index: 100;
     }
     .modal-overlay.open { display: flex; }
     .modal-content {
@@ -192,9 +196,11 @@
 
     /* Screen Lock PIN */
     #lockScreen {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: #0f172a; color: white; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; z-index: 200;
+      align-items: center; justify-content: center;
+      z-index: 200;
     }
     .pin-dots { display: flex; gap: 12px; margin: 20px 0 30px 0; }
     .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #64748b; }
@@ -202,13 +208,13 @@
     .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 240px; }
     .key-btn {
       width: 64px; height: 64px; border-radius: 50%; background: #1e293b; color: white;
-      border: none; font-size: 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      border: none; font-size: 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center;
+      justify-content: center;
     }
   </style>
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE -->
   <div id="lockScreen" style="display: none;">
     <h2>🔒 Mes Comptes Perso</h2>
     <p style="color: #94a3b8; font-size: 0.9rem;">Entrez votre code PIN</p>
@@ -242,14 +248,12 @@
     </div>
   </div>
 
-  <!-- Sélecteur de vue -->
   <div class="account-selector">
     <div class="account-tab active" id="tab-courant" onclick="selectAccountView('courant')">💳 Courant</div>
     <div class="account-tab" id="tab-livret" onclick="selectAccountView('livret')">🐷 Livret</div>
     <div class="account-tab" id="tab-fixes" onclick="selectAccountView('fixes')">📅 Charges Fixes</div>
   </div>
 
-  <!-- Dashboard avec fond dynamique -->
   <div class="dashboard-card" id="dashboardCard">
     <div class="solde-label" id="soldeLabel">Solde Compte Courant</div>
     <div id="soldeActuel" class="solde-main">0,00 €</div>
@@ -259,7 +263,6 @@
     </div>
   </div>
 
-  <!-- RÉSUMÉ & GRAPHIQUE -->
   <div class="stats-card" id="statsCard">
     <div class="stats-grid">
       <div class="stat-item">
@@ -271,12 +274,8 @@
         <div id="statDebit" class="stat-val red">-0,00 €</div>
       </div>
     </div>
-    <div class="chart-container">
-      <canvas id="soldeChart"></canvas>
-    </div>
   </div>
 
-  <!-- RECHERCHE -->
   <div class="filter-section" id="filterSection">
     <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher..." oninput="afficherDonnees()">
   </div>
@@ -285,7 +284,6 @@
 
   <button class="fab" id="fabAdd" onclick="ouvrirModalAjout()">+</button>
 
-  <!-- MODAL OPÉRATION -->
   <div id="opModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -300,7 +298,7 @@
           <button type="button" id="btnTypeCredit" class="type-btn credit" onclick="setType('credit')">Crédit</button>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="groupCompte">
           <label>Compte concerné</label>
           <select id="compteOp" class="form-control">
             <option value="courant">💳 Compte Courant</option>
@@ -337,8 +335,7 @@
           <input type="date" id="dateOp" class="form-control">
         </div>
 
-        <!-- OPTIONS DE PRÉVISION ET CHARGE FIXE -->
-        <div class="form-group" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+        <div class="form-group" id="groupOptions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
             <input type="checkbox" id="isPrevision"> Opération prévisionnelle (non comptabilisée en solde réel)
           </label>
@@ -355,7 +352,6 @@
     </div>
   </div>
 
-  <!-- CONFIGURATION -->
   <div id="configModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -391,7 +387,6 @@
     let rawData = { operations: [], chargesFixes: [] };
     let currentType = "debit";
     let activeAccountView = "courant"; // "courant", "livret", "fixes"
-    let chartInstance = null;
     let enteredPin = "";
 
     function initSecurity() {
@@ -444,7 +439,7 @@
     }
 
     function ouvrirModalAjout() {
-      document.getElementById('modalTitle').innerText = "Nouvelle opération";
+      document.getElementById('modalTitle').innerText = activeAccountView === 'fixes' ? "Nouvelle charge fixe" : "Nouvelle opération";
       document.getElementById('editOpId').value = "";
       document.getElementById('descOp').value = "";
       document.getElementById('montantOp').value = "";
@@ -452,6 +447,12 @@
       document.getElementById('compteOp').value = activeAccountView === 'livret' ? 'livret' : 'courant';
       document.getElementById('isPrevision').checked = false;
       document.getElementById('isChargeFixe').checked = activeAccountView === 'fixes';
+      
+      const isFixes = activeAccountView === 'fixes';
+      document.getElementById('groupDate').style.display = isFixes ? 'none' : 'block';
+      document.getElementById('groupCompte').style.display = isFixes ? 'none' : 'block';
+      document.getElementById('groupOptions').style.display = isFixes ? 'none' : 'flex';
+
       document.getElementById('catOp').value = "📦 Autre";
       document.getElementById('btnDelete').style.display = 'none';
       setType('debit');
@@ -473,8 +474,34 @@
       document.getElementById('catOp').value = op.categorie || "📦 Autre";
       document.getElementById('isPrevision').checked = !!op.isPrevision;
       document.getElementById('isChargeFixe').checked = false;
+      
+      document.getElementById('groupDate').style.display = 'block';
+      document.getElementById('groupCompte').style.display = 'block';
+      document.getElementById('groupOptions').style.display = 'flex';
+      
       document.getElementById('btnDelete').style.display = 'block';
       setType(op.type);
+
+      document.getElementById('opModal').classList.add('open');
+    }
+
+    function ouvrirModalEditionCharge(id) {
+      const cf = rawData.chargesFixes.find(c => c.id === id);
+      if (!cf) return;
+
+      document.getElementById('modalTitle').innerText = "Modifier la charge fixe";
+      document.getElementById('editOpId').value = cf.id;
+      document.getElementById('descOp').value = cf.description;
+      document.getElementById('montantOp').value = Math.abs(cf.montant);
+      document.getElementById('catOp').value = cf.categorie || "📦 Autre";
+      document.getElementById('isChargeFixe').checked = true;
+
+      document.getElementById('groupDate').style.display = 'none';
+      document.getElementById('groupCompte').style.display = 'none';
+      document.getElementById('groupOptions').style.display = 'none';
+
+      document.getElementById('btnDelete').style.display = 'block';
+      setType(cf.type);
 
       document.getElementById('opModal').classList.add('open');
     }
@@ -541,9 +568,7 @@
 
       const now = new Date();
       const currentMonthYear = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-
       const opsDuCompte = ops.filter(op => (op.compte || 'courant') === activeAccountView);
-
       opsDuCompte.forEach(op => {
         const val = op.type === 'debit' ? -Math.abs(op.montant) : Math.abs(op.montant);
         
@@ -622,31 +647,34 @@
       }
 
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
-      updateChart(opsDuCompte.filter(o => !o.isPrevision));
     }
 
     function afficherChargesFixes() {
       let charges = rawData.chargesFixes || [];
-      let html = `<div class="month-group"><div class="month-title">CHARGES ET REVENUS DU CYCLE</div><div class="ops-list">`;
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      if (searchQuery) {
+        charges = charges.filter(cf => cf.description.toLowerCase().includes(searchQuery));
+      }
 
+      let html = `<div class="month-group"><div class="month-title">CHARGES ET REVENUS DU CYCLE</div><div class="ops-list">`;
       charges.forEach(cf => {
         const icon = (cf.categorie || "📦").split(' ')[0];
         const estSalaire = cf.categorie.includes("Salaire") || cf.type === "credit";
         
         html += `
-          <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.4;' : ''}">
+          <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.4;' : ''}" onclick="ouvrirModalEditionCharge('${cf.id}')">
             <div class="op-left">
               <span class="op-cat-icon">${icon}</span>
               <div class="op-info">
                 <span class="op-desc">${cf.description}</span>
                 ${cf.valideCeMois ? '<span style="font-size:0.65rem; color:var(--green); font-weight:bold;">✅ Passé ce mois</span>' : 
-                  (estSalaire ? `<button type="button" class="btn-action-charge salary" onclick="validerSalaire('${cf.id}')">💰 Valider Salaire</button>` :
-                                `<button type="button" class="btn-action-charge" onclick="validerChargeFixe('${cf.id}')">⚡ Valider</button>`)}
+                  (estSalaire ? `<button type="button" class="btn-action-charge salary" onclick="event.stopPropagation(); validerSalaire('${cf.id}')">💰 Valider Salaire</button>` :
+                  `<button type="button" class="btn-action-charge" onclick="event.stopPropagation(); validerChargeFixe('${cf.id}')">⚡ Valider</button>`)}
               </div>
             </div>
             <div class="op-amount-block">
               <div class="op-amount ${cf.type}">${cf.type === 'debit' ? '-' : '+'} ${Math.abs(cf.montant).toFixed(2)} €</div>
-              <div class="op-date" onclick="supprimerChargeFixe('${cf.id}')" style="cursor:pointer; color:var(--red); margin-top:4px;">🗑️</div>
+              <div class="op-date" onclick="event.stopPropagation(); supprimerChargeFixe('${cf.id}')" style="cursor:pointer; color:var(--red); margin-top:4px;">🗑️</div>
             </div>
           </div>`;
       });
@@ -677,7 +705,6 @@
         categorie: cf.categorie,
         isPrevision: false
       });
-
       cf.valideCeMois = true;
       await pushToGitHub(`Validation charge : ${cf.description}`);
     }
@@ -701,7 +728,6 @@
         categorie: cf.categorie,
         isPrevision: false
       });
-
       cf.valideCeMois = true;
 
       if (confirm("Le salaire est enregistré ! Veux-tu réinitialiser toutes les charges fixes pour lancer le NOUVEAU MOIS ?")) {
@@ -719,41 +745,16 @@
 
     async function supprimerOperation() {
       const id = document.getElementById('editOpId').value;
-      if (!id || !confirm("Supprimer cette opération ?")) return;
-      rawData.operations = rawData.operations.filter(o => o.id !== id);
-      await pushToGitHub("Suppression opération");
-    }
-
-    function updateChart(opsSource) {
-      const opsReelles = opsSource.sort((a, b) => new Date(a.date) - new Date(b.date));
-      let runningSolde = 0;
-      const points = opsReelles.map(op => {
-        runningSolde += op.type === 'debit' ? -Math.abs(op.montant) : Math.abs(op.montant);
-        return { x: op.date, y: runningSolde };
-      });
-
-      const ctx = document.getElementById('soldeChart').getContext('2d');
-      if (chartInstance) chartInstance.destroy();
-
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: points.map(p => p.x),
-          datasets: [{
-            data: points.map(p => p.y),
-            borderColor: '#2563eb',
-            borderWidth: 2,
-            tension: 0.3,
-            pointRadius: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { display: false }, y: { ticks: { font: { size: 9 } }, grid: { color: '#f1f5f9' } } }
-        }
-      });
+      if (!id || !confirm("Supprimer l'élément sélectionné ?")) return;
+      
+      const isFixe = document.getElementById('isChargeFixe').checked;
+      if (isFixe) {
+        rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
+        await pushToGitHub("Suppression charge fixe");
+      } else {
+        rawData.operations = rawData.operations.filter(o => o.id !== id);
+        await pushToGitHub("Suppression opération");
+      }
     }
 
     function exporterCSV() {
@@ -785,7 +786,6 @@
         headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: commitMessage, content: contentBase64, sha: fileData.sha })
       });
-
       if (putRes.ok) {
         fermerModalOp();
         afficherDonnees();
@@ -805,16 +805,20 @@
         categorie: document.getElementById('catOp').value,
         type: currentType,
         compte: document.getElementById('compteOp').value
-      }; 
+      };
 
       if (isFixe) {
         itemData.valideCeMois = false;
-        rawData.chargesFixes.push(itemData);
-        await pushToGitHub(`Ajout Charge Fixe : ${itemData.description}`);
+        if (editId) {
+          const idx = rawData.chargesFixes.findIndex(c => c.id === editId);
+          if (idx !== -1) rawData.chargesFixes[idx] = itemData;
+        } else {
+          rawData.chargesFixes.push(itemData);
+        }
+        await pushToGitHub(`Enregistrement Charge Fixe : ${itemData.description}`);
       } else {
         itemData.date = document.getElementById('dateOp').value;
         itemData.isPrevision = document.getElementById('isPrevision').checked;
-        
         if (editId) {
           const idx = rawData.operations.findIndex(o => o.id === editId);
           if (idx !== -1) rawData.operations[idx] = itemData;
