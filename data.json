@@ -11,14 +11,6 @@
       "valideCeMois": false
     },
     {
-      "id": "3",
-      "description": "Prêt Voiture",
-      "montant": 200,
-      "type": "debit",
-      "categorie": "🚗 Transport",
-      "valideCeMois": false
-    },
-    {
       "id": "4",
       "description": "Salaire",
       "montant": 2000,
