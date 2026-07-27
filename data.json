@@ -1,16 +1,5 @@
 {
-  "operations": [
-    {
-      "id": "1785143167984",
-      "date": "2026-07-27",
-      "compte": "courant",
-      "description": "Salaire",
-      "montant": 2681,
-      "type": "credit",
-      "categorie": "💼 Salaire",
-      "isPrevision": false
-    }
-  ],
+  "operations": [],
   "chargesFixes": [
     {
       "id": "1",
