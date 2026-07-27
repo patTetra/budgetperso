@@ -7,6 +7,7 @@
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/wallet.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" id="themeColorMeta" content="#f8fafc">
   <title>Mes Comptes Perso</title>
 
   <style>
@@ -32,6 +33,7 @@
       max-width: 480px;
       margin-left: auto;
       margin-right: auto;
+      transition: background 0.3s ease;
     }
 
     .header {
@@ -41,7 +43,7 @@
       margin-bottom: 12px;
     }
     .header h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
-    .header-actions { display: flex; gap: 4px; }
+    .header-actions { display: flex; gap: 4px; align-items: center; }
     .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 6px; }
 
     /* Sélecteur de Vue Principale */
@@ -128,17 +130,55 @@
       border: 1px solid var(--border); background: var(--surface); font-size: 0.9rem;
     }
 
-    /* Historique */
+    /* Historique & Swipe Wrapper */
     .month-group { margin-bottom: 20px; }
     .month-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
     .ops-list { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    
+    .operation-container {
+      position: relative;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .operation-container:last-child { border-bottom: none; }
+
+    /* Actions cachées derrière le swipe */
+    .swipe-actions {
+      position: absolute;
+      top: 0; bottom: 0; right: 0;
+      display: flex;
+      z-index: 1;
+    }
+    .swipe-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0 16px;
+      cursor: pointer;
+      border: none;
+    }
+    .swipe-edit { background: #3b82f6; }
+    .swipe-delete { background: var(--red); }
+
     .operation-item {
+      position: relative;
+      z-index: 2;
       display: flex; justify-content: space-between; align-items: center;
       padding: 12px 14px;
-      border-bottom: 1px solid var(--border); cursor: pointer;
+      background: var(--surface);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
     }
-    .operation-item:last-child { border-bottom: none; }
+    .operation-item:active {
+      transform: scale(0.98);
+      background-color: #f1f5f9;
+    }
     .operation-item.is-prevision { opacity: 0.65; background-color: #f8fafc; }
+    
     .op-left { display: flex; align-items: center; gap: 10px; }
     .op-cat-icon { font-size: 1.3rem; background: var(--bg); padding: 8px; border-radius: 10px; }
     .op-info { display: flex; flex-direction: column; gap: 2px; }
@@ -173,6 +213,7 @@
       font-size: 1.8rem;
       box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); cursor: pointer;
       display: flex; align-items: center; justify-content: center; z-index: 90;
+      transition: background 0.3s ease;
     }
     @media (max-width: 480px) { .fab { right: 24px; } }
 
@@ -202,7 +243,7 @@
     .type-btn.active.credit { background: #dcfce7; color: var(--green); border-color: var(--green); }
     
     .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
-    .btn-submit { flex: 2; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-submit { flex: 2; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.3s ease; }
     .btn-secondary { padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; }
     .btn-delete { flex: 1; padding: 12px; background: #fee2e2; color: var(--red); border: 1px solid #fca5a5; border-radius: 8px; font-weight: 700; cursor: pointer; display: none; }
 
@@ -256,6 +297,7 @@
   <div class="header">
     <h1>Mes Comptes</h1>
     <div class="header-actions">
+      <button class="btn-icon" id="btnPrivacy" title="Mode confidentiel" onclick="togglePrivacyMode()">👁️‍🗨️</button>
       <button class="btn-icon" title="Rafraîchir" onclick="chargerDonnees()">🔄</button>
       <button class="btn-icon" title="Réglages" onclick="ouvrirConfig()">⚙️</button>
     </div>
@@ -427,8 +469,33 @@
     let currentType = "debit";
     let activeAccountView = "courant";
     let enteredPin = "";
+    let isPrivacyMode = false;
 
-    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) AVEC LE SEL CORRIGÉ (_v2) */
+    /* GESTION DE LA COULEUR DE THÈME DYNAMIQUE */
+    function updateThemeColor() {
+      const metaTheme = document.getElementById('themeColorMeta');
+      let color = "#2563eb"; // Courant par défaut
+      if (activeAccountView === 'livret') color = "#16a34a";
+      else if (activeAccountView === 'fixes') color = "#d97706";
+      
+      metaTheme.setAttribute("content", color);
+      document.documentElement.style.setProperty('--primary', color);
+    }
+
+    /* MODE MASQUÉ / CONFIDENTIEL */
+    function togglePrivacyMode() {
+      isPrivacyMode = !isPrivacyMode;
+      const btn = document.getElementById('btnPrivacy');
+      btn.style.opacity = isPrivacyMode ? "1" : "0.5";
+      afficherDonnees();
+    }
+
+    function formatAmount(amountStr) {
+      if (isPrivacyMode) return "••••••";
+      return amountStr;
+    }
+
+    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) */
     async function getKey(pin) {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin.padStart(16, "0")), { name: "PBKDF2" }, false, ["deriveKey"]);
@@ -494,6 +561,7 @@
 
     function selectAccountView(view) {
       activeAccountView = view;
+      updateThemeColor();
       document.querySelectorAll('.account-tab').forEach(t => t.classList.remove('active'));
       document.getElementById(`tab-${view}`).classList.add('active');
 
@@ -655,8 +723,6 @@
         let content = decodeURIComponent(escape(atob(file.content)));
         
         const pin = localStorage.getItem('app_pin');
-        
-        // Ne déchiffre que si le contenu n'est pas déjà du JSON en clair (commençant par '{')
         if (pin && pin.length === 4 && !content.trim().startsWith('{')) {
           try {
             content = await decryptData(content, pin);
@@ -668,6 +734,7 @@
 
         rawData = JSON.parse(content);
         if (!rawData.chargesFixes) rawData.chargesFixes = [];
+        updateThemeColor();
         afficherDonnees();
       } catch (e) { alert("Erreur de chargement ou fichier inexistant."); }
     }
@@ -712,15 +779,13 @@
         });
       }
 
-      document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
-      document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
+      document.getElementById('soldeActuel').innerText = formatAmount(`${soldeActuel.toFixed(2)} €`);
+      document.getElementById('soldePrevisionnel').innerText = formatAmount(`${soldePrevisionnel.toFixed(2)} €`);
 
-      // Capacité d'épargne (Solde Prévisionnel - Seuil d'Alerte)
       const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
       const capaciteEpargne = Math.max(0, soldePrevisionnel - seuil);
-      document.getElementById('capaciteVal').innerText = `${capaciteEpargne.toFixed(2)} €`;
+      document.getElementById('capaciteVal').innerText = formatAmount(`${capaciteEpargne.toFixed(2)} €`);
 
-      // Couleurs des cartes
       const card = document.getElementById('dashboardCard');
       card.classList.remove('status-green', 'status-orange', 'status-red');
       if (soldeActuel >= seuil) card.classList.add('status-green');
@@ -732,8 +797,8 @@
       if (soldePrevisionnel >= 0) prevCard.classList.add('status-green');
       else prevCard.classList.add('status-red');
 
-      document.getElementById('statCredit').innerText = `+${mCredit.toFixed(2)} €`;
-      document.getElementById('statDebit').innerText = `-${mDebit.toFixed(2)} €`;
+      document.getElementById('statCredit').innerText = formatAmount(`+${mCredit.toFixed(2)} €`);
+      document.getElementById('statDebit').innerText = formatAmount(`-${mDebit.toFixed(2)} €`);
 
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
       let filteredOps = opsDuCompte.filter(op => op.description.toLowerCase().includes(searchQuery));
@@ -752,22 +817,34 @@
           const d = new Date(op.date);
           const icon = (op.categorie || "📦").split(' ')[0];
           const finCreditHtml = op.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(op.dateFinCredit)}</span>` : '';
+          const montantFormatted = formatAmount(`${op.type === 'debit' ? '-' : '+'} ${Math.abs(op.montant).toFixed(2)} €`);
+          
           html += `
-            <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" onclick="ouvrirModalEdition('${op.id}')">
-              <div class="op-left">
-                <span class="op-cat-icon">${icon}</span>
-                <div class="op-info">
-                  <span class="op-desc">${op.description}</span>
-                  ${finCreditHtml}
-                  <div style="display:flex; gap:6px;">
-                    ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
-                    <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+            <div class="operation-container">
+              <div class="swipe-actions">
+                <button class="swipe-btn swipe-edit" onclick="ouvrirModalEdition('${op.id}')">✏️</button>
+                <button class="swipe-btn swipe-delete" onclick="supprimerOperationDirect('${op.id}')">🗑️</button>
+              </div>
+              <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" 
+                   onclick="ouvrirModalEdition('${op.id}')"
+                   ontouchstart="handleTouchStart(event)" 
+                   ontouchmove="handleTouchMove(event)" 
+                   ontouchend="handleTouchEnd(event, '${op.id}')">
+                <div class="op-left">
+                  <span class="op-cat-icon">${icon}</span>
+                  <div class="op-info">
+                    <span class="op-desc">${op.description}</span>
+                    ${finCreditHtml}
+                    <div style="display:flex; gap:6px;">
+                      ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
+                      <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="op-amount-block">
-                <div class="op-amount ${op.type}">${op.type === 'debit' ? '-' : '+'} ${Math.abs(op.montant).toFixed(2)} €</div>
-                <div class="op-date">${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</div>
+                <div class="op-amount-block">
+                  <div class="op-amount ${op.type}">${montantFormatted}</div>
+                  <div class="op-date">${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</div>
+                </div>
               </div>
             </div>`;
         });
@@ -787,6 +864,7 @@
         const icon = (cf.categorie || "📦").split(' ')[0];
         const estSalaire = cf.categorie.includes("Salaire") || cf.type === "credit";
         const finCreditHtml = cf.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(cf.dateFinCredit)}</span>` : '';
+        const montantFormatted = formatAmount(`${cf.type === 'debit' ? '-' : '+'} ${Math.abs(cf.montant).toFixed(2)} €`);
         
         html += `
           <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.6;' : ''}" onclick="ouvrirModalEditionCharge('${cf.id}')">
@@ -804,7 +882,7 @@
               </div>
             </div>
             <div class="op-amount-block">
-              <div class="op-amount ${cf.type}">${cf.type === 'debit' ? '-' : '+'} ${Math.abs(cf.montant).toFixed(2)} €</div>
+              <div class="op-amount ${cf.type}">${montantFormatted}</div>
               <div class="op-date" onclick="event.stopPropagation(); supprimerChargeFixe('${cf.id}')" style="cursor:pointer; color:var(--red); margin-top:4px;">🗑️</div>
             </div>
           </div>`;
@@ -812,6 +890,36 @@
 
       html += `</div></div>`;
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune charge fixe enregistrée.</p>";
+    }
+
+    /* GESTION DU GESTE SWIPE TACTILE */
+    let touchStartX = 0;
+    let currentSwipeElement = null;
+
+    function handleTouchStart(e) {
+      touchStartX = e.touches[0].clientX;
+      currentSwipeElement = e.currentTarget;
+    }
+
+    function handleTouchMove(e) {
+      if (!currentSwipeElement) return;
+      let currentX = e.touches[0].clientX;
+      let diff = currentX - touchStartX;
+      if (diff < 0 && diff > -120) {
+        currentSwipeElement.style.transform = `translateX(${diff}px)`;
+      }
+    }
+
+    function handleTouchEnd(e, id) {
+      if (!currentSwipeElement) return;
+      let currentX = e.changedTouches[0].clientX;
+      let diff = currentX - touchStartX;
+      if (diff < -60) {
+        currentSwipeElement.style.transform = `translateX(-110px)`; // Ouvre les actions
+      } else {
+        currentSwipeElement.style.transform = `translateX(0px)`; // Ferme
+      }
+      currentSwipeElement = null;
     }
 
     async function annulerValidationFixe(id) {
@@ -884,6 +992,12 @@
       }
     }
 
+    async function supprimerOperationDirect(id) {
+      if (!confirm("Supprimer cette opération ?")) return;
+      rawData.operations = rawData.operations.filter(o => o.id !== id);
+      await pushToGitHub("Suppression opération");
+    }
+
     async function supprimerOperation() {
       const id = document.getElementById('editOpId').value;
       if (!id || !confirm("Supprimer l'élément sélectionné ?")) return;
@@ -900,7 +1014,7 @@
 
     function exporterJSON() {
       const backupData = {
-        app_version: "3.0",
+        app_version: "3.1",
         date_export: new Date().toISOString(),
         config: {
           gh_user: localStorage.getItem('gh_user') || '',
@@ -982,7 +1096,6 @@
       let textJSON = JSON.stringify(rawData, null, 2);
       const pin = localStorage.getItem('app_pin');
       
-      // Chiffrement si un PIN est défini
       if (pin && pin.length === 4) {
         textJSON = await encryptData(textJSON, pin);
       }
@@ -1028,7 +1141,7 @@
         await pushToGitHub(`Enregistrement Charge Fixe : ${itemData.description}`);
       } else {
         itemData.date = document.getElementById('dateOp').value;
-        itemData.isPrevision = document.getElementById('isPrevision').checked;
+        itemData.isPrevision = document.getElementById('isPrevision'].checked;
         if (editId) {
           const idx = rawData.operations.findIndex(o => o.id === editId);
           if (idx !== -1) rawData.operations[idx] = itemData;
