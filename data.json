@@ -11,14 +11,6 @@
       "valideCeMois": false
     },
     {
-      "id": "2",
-      "description": "Assurance Auto",
-      "montant": 60,
-      "type": "debit",
-      "categorie": "📄 Assurance",
-      "valideCeMois": false
-    },
-    {
       "id": "3",
       "description": "Prêt Voiture",
       "montant": 200,
