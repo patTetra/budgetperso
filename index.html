@@ -428,7 +428,6 @@
     let activeAccountView = "courant";
     let enteredPin = "";
 
-    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) */
     async function getKey(pin) {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin.padStart(16, "0")), { name: "PBKDF2" }, false, ["deriveKey"]);
@@ -651,6 +650,15 @@
       const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?timestamp=${Date.now()}`;
       try {
         const res = await fetch(url, { headers: { Authorization: `token ${token}` } });
+        
+        if (res.status === 404) {
+          // Fichier inexistant sur le dépôt, on l'initialise à vide proprement
+          rawData = { operations: [], chargesFixes: [] };
+          await pushToGitHub("Initialisation du fichier data.json");
+          afficherDonnees();
+          return;
+        }
+
         const file = await res.json();
         let content = decodeURIComponent(escape(atob(file.content)));
         
@@ -713,12 +721,10 @@
       document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
       document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
 
-      // Capacité d'épargne (Solde Prévisionnel - Seuil d'Alerte)
       const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
       const capaciteEpargne = Math.max(0, soldePrevisionnel - seuil);
       document.getElementById('capaciteVal').innerText = `${capaciteEpargne.toFixed(2)} €`;
 
-      // Couleurs des cartes
       const card = document.getElementById('dashboardCard');
       card.classList.remove('status-green', 'status-orange', 'status-red');
       if (soldeActuel >= seuil) card.classList.add('status-green');
@@ -973,25 +979,29 @@
       const { user, repo, token } = getConfig();
       const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
       
-      /* Correction : Envoi du token pour la lecture initiale pour éviter les erreurs HTTP 404/401 sur dépôt privé */
+      let sha = null;
       const getRes = await fetch(url, { headers: { Authorization: `token ${token}` } });
-      if (!getRes.ok) return alert("Erreur d'accès à GitHub");
-      const fileData = await getRes.json();
+      if (getRes.ok) {
+        const fileData = await getRes.json();
+        sha = fileData.sha;
+      }
 
       let textJSON = JSON.stringify(rawData, null, 2);
       const pin = localStorage.getItem('app_pin');
       
-      // Chiffrement si un PIN est défini
       if (pin && pin.length === 4) {
         textJSON = await encryptData(textJSON, pin);
       }
 
       const contentBase64 = btoa(unescape(encodeURIComponent(textJSON)));
 
+      const bodyData = { message: commitMessage, content: contentBase64 };
+      if (sha) bodyData.sha = sha;
+
       const putRes = await fetch(url, {
         method: 'PUT',
         headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: commitMessage, content: contentBase64, sha: fileData.sha })
+        body: JSON.stringify(bodyData)
       });
 
       if (putRes.ok) {
