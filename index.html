@@ -137,6 +137,7 @@
     .op-cat-icon { font-size: 1.3rem; background: var(--bg); padding: 8px; border-radius: 10px; }
     .op-info { display: flex; flex-direction: column; gap: 2px; }
     .op-desc { font-weight: 600; font-size: 0.9rem; }
+    .op-credit-end { font-size: 0.75rem; color: #d97706; font-weight: 600; }
     
     .btn-action-charge {
       font-size: 0.75rem;
@@ -215,6 +216,7 @@
 </head>
 <body>
 
+  <!-- ÉCRAN DE VERROUILLAGE -->
   <div id="lockScreen" style="display: none;">
     <h2>🔒 Mes Comptes Perso</h2>
     <p style="color: #94a3b8; font-size: 0.9rem;">Entrez votre code PIN</p>
@@ -248,12 +250,14 @@
     </div>
   </div>
 
+  <!-- Sélecteur de vue -->
   <div class="account-selector">
     <div class="account-tab active" id="tab-courant" onclick="selectAccountView('courant')">💳 Courant</div>
     <div class="account-tab" id="tab-livret" onclick="selectAccountView('livret')">🐷 Livret</div>
     <div class="account-tab" id="tab-fixes" onclick="selectAccountView('fixes')">📅 Charges Fixes</div>
   </div>
 
+  <!-- Dashboard avec fond dynamique -->
   <div class="dashboard-card" id="dashboardCard">
     <div class="solde-label" id="soldeLabel">Solde Compte Courant</div>
     <div id="soldeActuel" class="solde-main">0,00 €</div>
@@ -263,6 +267,7 @@
     </div>
   </div>
 
+  <!-- RÉSUMÉ -->
   <div class="stats-card" id="statsCard">
     <div class="stats-grid">
       <div class="stat-item">
@@ -276,6 +281,7 @@
     </div>
   </div>
 
+  <!-- RECHERCHE -->
   <div class="filter-section" id="filterSection">
     <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher..." oninput="afficherDonnees()">
   </div>
@@ -284,6 +290,7 @@
 
   <button class="fab" id="fabAdd" onclick="ouvrirModalAjout()">+</button>
 
+  <!-- MODAL OPÉRATION -->
   <div id="opModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -318,7 +325,7 @@
 
         <div class="form-group">
           <label>Catégorie</label>
-          <select id="catOp" class="form-control">
+          <select id="catOp" class="form-control" onchange="toggleDateFinCredit()">
             <option value="🏠 Logement">🏠 Logement / Crédit</option>
             <option value="💼 Salaire">💼 Salaire / Revenu</option>
             <option value="🚗 Transport">🚗 Transport / Auto</option>
@@ -330,11 +337,18 @@
           </select>
         </div>
 
+        <!-- CHAMP SPÉCIFIQUE DATE FIN CRÉDIT -->
+        <div class="form-group" id="groupDateFinCredit" style="display: none;">
+          <label>Date de fin du crédit (Mois / Année)</label>
+          <input type="month" id="dateFinCredit" class="form-control">
+        </div>
+
         <div class="form-group" id="groupDate">
           <label>Date</label>
           <input type="date" id="dateOp" class="form-control">
         </div>
 
+        <!-- OPTIONS DE PRÉVISION ET CHARGE FIXE -->
         <div class="form-group" id="groupOptions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
             <input type="checkbox" id="isPrevision"> Opération prévisionnelle (non comptabilisée en solde réel)
@@ -352,6 +366,7 @@
     </div>
   </div>
 
+  <!-- CONFIGURATION -->
   <div id="configModal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -438,12 +453,25 @@
       document.getElementById('btnTypeCredit').className = `type-btn credit ${type === 'credit' ? 'active' : ''}`;
     }
 
+    function toggleDateFinCredit() {
+      const cat = document.getElementById('catOp').value;
+      const displayStyle = cat.includes("Logement") ? 'block' : 'none';
+      document.getElementById('groupDateFinCredit').style.display = displayStyle;
+    }
+
+    function formatMonthYear(ym) {
+      if (!ym) return '';
+      const [year, month] = ym.split('-');
+      return `${month}/${year}`;
+    }
+
     function ouvrirModalAjout() {
       document.getElementById('modalTitle').innerText = activeAccountView === 'fixes' ? "Nouvelle charge fixe" : "Nouvelle opération";
       document.getElementById('editOpId').value = "";
       document.getElementById('descOp').value = "";
       document.getElementById('montantOp').value = "";
       document.getElementById('dateOp').valueAsDate = new Date();
+      document.getElementById('dateFinCredit').value = "";
       document.getElementById('compteOp').value = activeAccountView === 'livret' ? 'livret' : 'courant';
       document.getElementById('isPrevision').checked = false;
       document.getElementById('isChargeFixe').checked = activeAccountView === 'fixes';
@@ -454,6 +482,7 @@
       document.getElementById('groupOptions').style.display = isFixes ? 'none' : 'flex';
 
       document.getElementById('catOp').value = "📦 Autre";
+      toggleDateFinCredit();
       document.getElementById('btnDelete').style.display = 'none';
       setType('debit');
       
@@ -472,12 +501,14 @@
       document.getElementById('dateOp').value = op.date;
       document.getElementById('compteOp').value = op.compte || 'courant';
       document.getElementById('catOp').value = op.categorie || "📦 Autre";
+      document.getElementById('dateFinCredit').value = op.dateFinCredit || "";
       document.getElementById('isPrevision').checked = !!op.isPrevision;
       document.getElementById('isChargeFixe').checked = false;
       
       document.getElementById('groupDate').style.display = 'block';
       document.getElementById('groupCompte').style.display = 'block';
       document.getElementById('groupOptions').style.display = 'flex';
+      toggleDateFinCredit();
       
       document.getElementById('btnDelete').style.display = 'block';
       setType(op.type);
@@ -494,11 +525,13 @@
       document.getElementById('descOp').value = cf.description;
       document.getElementById('montantOp').value = Math.abs(cf.montant);
       document.getElementById('catOp').value = cf.categorie || "📦 Autre";
+      document.getElementById('dateFinCredit').value = cf.dateFinCredit || "";
       document.getElementById('isChargeFixe').checked = true;
 
       document.getElementById('groupDate').style.display = 'none';
       document.getElementById('groupCompte').style.display = 'none';
       document.getElementById('groupOptions').style.display = 'none';
+      toggleDateFinCredit();
 
       document.getElementById('btnDelete').style.display = 'block';
       setType(cf.type);
@@ -628,12 +661,14 @@
         listeOps.forEach(op => {
           const d = new Date(op.date);
           const icon = (op.categorie || "📦").split(' ')[0];
+          const finCreditHtml = op.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(op.dateFinCredit)}</span>` : '';
           html += `
             <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" onclick="ouvrirModalEdition('${op.id}')">
               <div class="op-left">
                 <span class="op-cat-icon">${icon}</span>
                 <div class="op-info">
                   <span class="op-desc">${op.description}</span>
+                  ${finCreditHtml}
                   ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider Prévision</button>` : ''}
                 </div>
               </div>
@@ -660,6 +695,7 @@
       charges.forEach(cf => {
         const icon = (cf.categorie || "📦").split(' ')[0];
         const estSalaire = cf.categorie.includes("Salaire") || cf.type === "credit";
+        const finCreditHtml = cf.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(cf.dateFinCredit)}</span>` : '';
         
         html += `
           <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.4;' : ''}" onclick="ouvrirModalEditionCharge('${cf.id}')">
@@ -667,6 +703,7 @@
               <span class="op-cat-icon">${icon}</span>
               <div class="op-info">
                 <span class="op-desc">${cf.description}</span>
+                ${finCreditHtml}
                 ${cf.valideCeMois ? '<span style="font-size:0.65rem; color:var(--green); font-weight:bold;">✅ Passé ce mois</span>' : 
                   (estSalaire ? `<button type="button" class="btn-action-charge salary" onclick="event.stopPropagation(); validerSalaire('${cf.id}')">💰 Valider Salaire</button>` :
                   `<button type="button" class="btn-action-charge" onclick="event.stopPropagation(); validerChargeFixe('${cf.id}')">⚡ Valider</button>`)}
@@ -703,6 +740,7 @@
         montant: cf.montant,
         type: cf.type,
         categorie: cf.categorie,
+        dateFinCredit: cf.dateFinCredit || null,
         isPrevision: false
       });
       cf.valideCeMois = true;
@@ -759,9 +797,9 @@
 
     function exporterCSV() {
       let ops = rawData.operations || [];
-      let csv = "ID;Date;Type;Compte;Categorie;Description;Montant;Prevision\n";
+      let csv = "ID;Date;Type;Compte;Categorie;Description;Montant;Prevision;FinCredit\n";
       ops.forEach(o => {
-        csv += `"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant};"${o.isPrevision ? 'OUI' : 'NON'}"\n`;
+        csv += `"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant};"${o.isPrevision ? 'OUI' : 'NON'}";"${o.dateFinCredit || ''}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
@@ -803,6 +841,7 @@
         description: document.getElementById('descOp').value,
         montant: parseFloat(document.getElementById('montantOp').value),
         categorie: document.getElementById('catOp').value,
+        dateFinCredit: document.getElementById('dateFinCredit').value || null,
         type: currentType,
         compte: document.getElementById('compteOp').value
       };
