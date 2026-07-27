@@ -80,6 +80,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137568556",
+      "description": "Courses du mois",
+      "montant": 260,
+      "categorie": "🛒 Alimentation",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
