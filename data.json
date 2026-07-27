@@ -143,8 +143,9 @@
     {
       "id": "1785137688920",
       "description": "Tessie",
-      "montant": 4.3,
+      "montant": 4.99,
       "categorie": "🚗 Transport",
+      "dateFinCredit": null,
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
