@@ -98,6 +98,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137628237",
+      "description": "Tesla premium",
+      "montant": 9.99,
+      "categorie": "🚗 Transport",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
