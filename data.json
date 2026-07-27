@@ -89,6 +89,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137604938",
+      "description": "Prêt Tesla ",
+      "montant": 490.16,
+      "categorie": "🚗 Transport",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
