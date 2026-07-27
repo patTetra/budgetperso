@@ -56,7 +56,7 @@
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* En-tête avec effet Flou translucide (Glassmorphism) */
+    /* En-tête translucide */
     .header {
       position: sticky;
       top: 0;
@@ -172,7 +172,7 @@
     }
     .pill.active { background: var(--primary); color: white; }
 
-    /* Liste des Opérations & Animations */
+    /* Liste des Opérations */
     .month-group { margin-bottom: 20px; animation: fadeIn 0.3s ease-in-out; }
     .month-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; margin-left: 4px; }
     .ops-list { background: var(--surface-solid); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
@@ -221,7 +221,7 @@
     .fab:active { transform: scale(0.9); }
     @media (max-width: 480px) { .fab { right: 24px; } }
 
-    /* Modals avec effet Flou translucide */
+    /* Modals */
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.4); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
@@ -269,7 +269,6 @@
       display: flex; align-items: center; justify-content: center; transition: transform 0.1s;
     }
     .key-btn:active { transform: scale(0.9); background: var(--border); }
-    .face-id-btn { margin-top: 24px; padding: 10px 20px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--surface-solid); color: var(--primary); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
     /* Animations Keyframes */
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -278,7 +277,7 @@
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE -->
+  <!-- ÉCRAN DE VERROUILLAGE PIN UNIQUE -->
   <div id="lockScreen" style="display: none;">
     <h2>🔒 Mes Comptes</h2>
     <p style="color: var(--text-muted); font-size: 0.9rem;">Saisissez votre code PIN</p>
@@ -302,9 +301,6 @@
       <button class="key-btn" onclick="pressPin('0')">0</button>
       <button class="key-btn" onclick="clearPin()">⌫</button>
     </div>
-    <button class="face-id-btn" id="faceIdBtn" onclick="authentifierFaceID()" style="display: none;">
-      👤 Déverrouiller avec Face ID
-    </button>
   </div>
 
   <div class="header">
@@ -477,32 +473,12 @@
     let currentFilter = "all";
     let enteredPin = "";
 
-    async function initSecurity() {
+    function initSecurity() {
       const savedPin = localStorage.getItem('app_pin');
       if (savedPin && savedPin.length === 4) {
         document.getElementById('lockScreen').style.display = 'flex';
-        // Affiche le bouton uniquement si la biométrie est supportée par l'appareil
-        if (window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
-          document.getElementById('faceIdBtn').style.display = 'flex';
-        }
       } else {
         chargerDonnees();
-      }
-    }
-
-    async function authentifierFaceID() {
-      try {
-        const challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-        const assertion = await navigator.credentials.get({
-          publicKey: { challenge: challenge, timeout: 60000, userVerification: "preferred" }
-        });
-        if (assertion) {
-          document.getElementById('lockScreen').style.display = 'none';
-          chargerDonnees();
-        }
-      } catch (e) {
-        alert("Face ID n'est pas encore enregistré sur ce domaine. Veuillez saisir votre code PIN.");
       }
     }
 
@@ -514,11 +490,19 @@
           if (enteredPin === localStorage.getItem('app_pin')) {
             document.getElementById('lockScreen').style.display = 'none';
             chargerDonnees();
-          } else { alert("Code PIN incorrect"); clearPin(); }
+          } else { 
+            alert("Code PIN incorrect"); 
+            clearPin(); 
+          }
         }
       }
     }
-    function clearPin() { enteredPin = ""; updatePinDots(); }
+
+    function clearPin() { 
+      enteredPin = ""; 
+      updatePinDots(); 
+    }
+
     function updatePinDots() {
       for (let i = 1; i <= 4; i++) {
         document.getElementById(`dot${i}`).className = `dot ${i <= enteredPin.length ? 'filled' : ''}`;
@@ -980,7 +964,7 @@
         }
       } catch (e) {
         updateSyncStatus('error');
-        alert("Erreur de sauvegarde vers GitHub.");
+        alert("Erreur de synchronisation avec GitHub.");
       }
     }
 
