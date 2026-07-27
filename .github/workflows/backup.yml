@@ -1,0 +1,28 @@
+name: Sauvegarde Automatique Hebdomadaire
+
+on:
+  schedule:
+    # S'exécute tous les dimanches à 23h59 (UTC)
+    - cron: '59 23 * * 0'
+  workflow_dispatch: # Permet de lancer une sauvegarde manuellement si besoin
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Créer le fichier de backup
+        run: |
+          mkdir -p backups
+          cp data.json "backups/data_$(date +'%Y-%m-%d').json"
+
+      - name: Enregistrer la sauvegarde sur GitHub
+        run: |
+          git config --global user.name 'GitHub Action Backup'
+          git config --global user.email 'action@github.com'
+          git add backups/
+          git commit -m "📦 Sauvegarde automatique du dimanche" || exit 0
+          git push
