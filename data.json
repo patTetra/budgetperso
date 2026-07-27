@@ -107,6 +107,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137655372",
+      "description": "Épargne pneus ",
+      "montant": 50,
+      "categorie": "🏦 Épargne",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
