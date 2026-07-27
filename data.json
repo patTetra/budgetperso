@@ -71,6 +71,15 @@
       "type": "debit",
       "compte": "courant",
       "valideCeMois": false
+    },
+    {
+      "id": "1785137550235",
+      "description": "Arlo",
+      "montant": 3.99,
+      "categorie": "🏠 Logement",
+      "type": "debit",
+      "compte": "courant",
+      "valideCeMois": false
     }
   ]
 }
