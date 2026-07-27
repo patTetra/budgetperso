@@ -337,7 +337,6 @@
           </select>
         </div>
 
-        <!-- CHAMP SPÉCIFIQUE DATE FIN CRÉDIT -->
         <div class="form-group" id="groupDateFinCredit" style="display: none;">
           <label>Date de fin du crédit (Mois / Année)</label>
           <input type="month" id="dateFinCredit" class="form-control">
@@ -348,7 +347,6 @@
           <input type="date" id="dateOp" class="form-control">
         </div>
 
-        <!-- OPTIONS DE PRÉVISION ET CHARGE FIXE -->
         <div class="form-group" id="groupOptions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
             <input type="checkbox" id="isPrevision"> Opération prévisionnelle (non comptabilisée en solde réel)
@@ -392,7 +390,6 @@
       
       <hr style="border:0; border-top: 1px solid var(--border); margin: 16px 0;">
 
-      <!-- EXPORTATIONS ET IMPORTATIONS -->
       <div class="form-group" style="display:flex; flex-direction:column; gap:8px;">
         <button class="btn-secondary" style="width:100%" onclick="exporterJSON()">📦 Sauvegarder tout (JSON)</button>
         
@@ -409,7 +406,7 @@
   <script>
     let rawData = { operations: [], chargesFixes: [] };
     let currentType = "debit";
-    let activeAccountView = "courant"; // "courant", "livret", "fixes"
+    let activeAccountView = "courant";
     let enteredPin = "";
 
     function initSecurity() {
@@ -704,13 +701,16 @@
         const finCreditHtml = cf.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(cf.dateFinCredit)}</span>` : '';
         
         html += `
-          <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.4;' : ''}" onclick="ouvrirModalEditionCharge('${cf.id}')">
+          <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.6;' : ''}" onclick="ouvrirModalEditionCharge('${cf.id}')">
             <div class="op-left">
               <span class="op-cat-icon">${icon}</span>
               <div class="op-info">
                 <span class="op-desc">${cf.description}</span>
                 ${finCreditHtml}
-                ${cf.valideCeMois ? '<span style="font-size:0.65rem; color:var(--green); font-weight:bold;">✅ Passé ce mois</span>' : 
+                ${cf.valideCeMois ? 
+                  `<span style="font-size:0.65rem; color:var(--green); font-weight:bold;">✅ Passé ce mois 
+                     <button type="button" style="margin-left:6px; font-size:0.65rem; background:none; border:none; color:var(--red); text-decoration:underline; cursor:pointer;" onclick="event.stopPropagation(); annulerValidationFixe('${cf.id}')">(Annuler)</button>
+                   </span>` : 
                   (estSalaire ? `<button type="button" class="btn-action-charge salary" onclick="event.stopPropagation(); validerSalaire('${cf.id}')">💰 Valider Salaire</button>` :
                   `<button type="button" class="btn-action-charge" onclick="event.stopPropagation(); validerChargeFixe('${cf.id}')">⚡ Valider</button>`)}
               </div>
@@ -724,6 +724,16 @@
 
       html += `</div></div>`;
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune charge fixe enregistrée.</p>";
+    }
+
+    async function annulerValidationFixe(id) {
+      const cf = rawData.chargesFixes.find(c => c.id === id);
+      if (!cf) return;
+
+      if (confirm(`Remettre "${cf.description}" en attente de validation ?`)) {
+        cf.valideCeMois = false;
+        await pushToGitHub(`Annulation validation : ${cf.description}`);
+      }
     }
 
     async function validerPrevision(id) {
@@ -774,7 +784,6 @@
       });
 
       if (confirm("Le salaire est enregistré ! Veux-tu réinitialiser les charges fixes pour lancer le NOUVEAU MOIS ?")) {
-        // Réinitialise toutes les charges, SAUF le salaire qu'on vient de valider
         rawData.chargesFixes.forEach(c => {
           c.valideCeMois = (c.id === id);
         });
@@ -800,12 +809,20 @@
         rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
         await pushToGitHub("Suppression charge fixe");
       } else {
+        const opASupprimer = rawData.operations.find(o => o.id === id);
+        
+        // Si l'opération supprimée correspond à une charge fixe ou au salaire, on remet la charge à "non validée"
+        if (opASupprimer) {
+          const cfAssociee = rawData.chargesFixes.find(c => c.description.toLowerCase() === opASupprimer.description.toLowerCase());
+          if (cfAssociee) {
+            cfAssociee.valideCeMois = false;
+          }
+        }
+
         rawData.operations = rawData.operations.filter(o => o.id !== id);
         await pushToGitHub("Suppression opération");
       }
     }
-
-    /* --- EXPORTATIONS ET IMPORTATIONS COMPLETES --- */
 
     function exporterJSON() {
       const backupData = {
