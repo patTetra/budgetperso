@@ -1,1228 +1,386 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/wallet.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Mes Comptes Perso</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Budget Personnel</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
 
-  <style>
-    :root {
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --primary: #2563eb;
-      --green: #16a34a;
-      --red: #dc2626;
-      --radius: 16px;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 20px 16px 100px 16px;
-      max-width: 480px;
-      margin-left: auto;
-      margin-right: auto;
-    }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-bottom: 50px;
+        }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .header h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
-    .header-actions { display: flex; align-items: center; gap: 4px; }
-    .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 6px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
 
-    /* LED de Statut de mise à jour */
-    .sync-status-led {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #94a3b8;
-      display: inline-block;
-      margin-right: 6px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
-      transition: background 0.3s ease;
-    }
-    .sync-status-led.green { background: var(--green); box-shadow: 0 0 8px var(--green); }
-    .sync-status-led.orange { background: #d97706; box-shadow: 0 0 8px #d97706; animation: pulse 1s infinite; }
-    .sync-status-led.red { background: var(--red); box-shadow: 0 0 8px var(--red); }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
 
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; }
-      100% { opacity: 1; }
-    }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
 
-    /* Sélecteur de Vue Principale */
-    .account-selector {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 16px;
-      background: #e2e8f0;
-      padding: 4px;
-      border-radius: 12px;
-    }
-    .account-tab {
-      flex: 1;
-      text-align: center;
-      padding: 8px 2px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      border-radius: 8px;
-      cursor: pointer;
-      color: var(--text-muted);
-      transition: all 0.2s;
-    }
-    .account-tab.active {
-      background: var(--surface);
-      color: var(--primary);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
+        button {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
 
-    /* Cartes de Solde */
-    .dashboard-card {
-      color: white;
-      padding: 16px 20px;
-      border-radius: var(--radius);
-      box-shadow: 0 6px 15px -3px rgba(0,0,0,0.08);
-      margin-bottom: 12px;
-      transition: background 0.3s ease;
-    }
-    .dashboard-card.status-green {
-      background: linear-gradient(135deg, #15803d, #166534) !important;
-    }
-    .dashboard-card.status-orange {
-      background: linear-gradient(135deg, #d97706, #b45309) !important;
-    }
-    .dashboard-card.status-red {
-      background: linear-gradient(135deg, #dc2626, #991b1b) !important;
-    }
+        button:active {
+            background: var(--border);
+        }
 
-    .solde-label { font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-    .solde-main { font-size: 1.8rem; font-weight: 800; margin-top: 4px; }
+        button.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
 
-    /* Capacité d'épargne */
-    .epargne-box {
-      background: #eff6ff;
-      border: 1px dashed #93c5fd;
-      color: #1e40af;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
 
-    /* Stats */
-    .stats-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .stats-grid { display: flex; justify-content: space-between; }
-    .stat-item { text-align: center; flex: 1; }
-    .stat-val { font-weight: 700; font-size: 1.1rem; margin-top: 2px; }
-    .stat-val.red { color: var(--red); }
-    .stat-val.green { color: var(--green); }
+        .balance-card {
+            text-align: center;
+            padding: 24px 16px;
+        }
 
-    /* Filtres & Recherche */
-    .filter-section { margin-bottom: 16px; }
-    .search-bar {
-      width: 100%; padding: 10px 14px; border-radius: 10px;
-      border: 1px solid var(--border); background: var(--surface); font-size: 0.9rem;
-    }
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 8px 0;
+        }
 
-    /* Historique & Swipe */
-    .month-group { margin-bottom: 20px; }
-    .month-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
-    .ops-list { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
-    
-    .operation-wrapper {
-      position: relative;
-      overflow: hidden;
-      border-bottom: 1px solid var(--border);
-    }
-    .operation-wrapper:last-child { border-bottom: none; }
+        .balance-amount.positive { color: var(--success); }
+        .balance-amount.negative { color: var(--danger); }
 
-    .swipe-delete-bg {
-      position: absolute;
-      top: 0; right: 0; bottom: 0;
-      width: 80px;
-      background: var(--red);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      z-index: 1;
-    }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
 
-    .operation-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 14px;
-      background: var(--surface);
-      position: relative;
-      z-index: 2;
-      transition: transform 0.2s ease;
-      cursor: pointer;
-    }
-    .operation-item.is-prevision { opacity: 0.65; background-color: #f8fafc; }
-    .op-left { display: flex; align-items: center; gap: 10px; }
-    .op-cat-icon { font-size: 1.3rem; background: var(--bg); padding: 8px; border-radius: 10px; }
-    .op-info { display: flex; flex-direction: column; gap: 2px; }
-    .op-desc { font-weight: 600; font-size: 0.9rem; }
-    .op-credit-end { font-size: 0.75rem; color: #d97706; font-weight: 600; }
-    
-    .btn-action-charge {
-      font-size: 0.75rem;
-      background: #dcfce7; color: var(--green); border: 1px solid #86efac;
-      padding: 4px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 4px;
-      width: fit-content;
-    }
-    .btn-action-charge.salary { background: #dbeafe; color: var(--primary); border-color: #93c5fd; }
-    .btn-action-charge.prev { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
-    .btn-dup {
-      font-size: 0.7rem; background: var(--bg); border: 1px solid var(--border);
-      padding: 2px 6px; border-radius: 4px; color: var(--text-muted); margin-top: 4px;
-      width: fit-content; cursor: pointer;
-    }
-    
-    .op-amount-block { text-align: right; }
-    .op-amount { font-weight: 700; font-size: 0.95rem; }
-    .op-amount.debit { color: var(--red); }
-    .op-amount.credit { color: var(--green); }
-    .op-date { font-size: 0.75rem; color: var(--text-muted); }
+        .stat-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
 
-    /* FAB */
-    .fab {
-      position: fixed;
-      bottom: 24px; right: calc(50% - 220px); width: 56px; height: 56px;
-      border-radius: 50%; background: var(--primary); color: white; border: none;
-      font-size: 1.8rem;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); cursor: pointer;
-      display: flex; align-items: center; justify-content: center; z-index: 90;
-    }
-    @media (max-width: 480px) { .fab { right: 24px; } }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
 
-    /* Modals */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px);
-      display: none; align-items: flex-end;
-      justify-content: center; z-index: 100;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal-content {
-      background: var(--surface); width: 100%; max-width: 480px;
-      border-radius: 24px 24px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto;
-    }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .modal-header h2 { margin: 0; font-size: 1.1rem; }
-    
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
-    .form-control { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; background: var(--bg); }
-    
-    .type-selector { display: flex; gap: 8px; }
-    .type-btn { flex: 1; padding: 10px; border: 1px solid var(--border); background: var(--bg); border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .type-btn.active.debit { background: #fee2e2; color: var(--red); border-color: var(--red); }
-    .type-btn.active.credit { background: #dcfce7; color: var(--green); border-color: var(--green); }
-    
-    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
-    .btn-submit { flex: 2; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
-    .btn-secondary { padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; }
-    .btn-delete { flex: 1; padding: 12px; background: #fee2e2; color: var(--red); border: 1px solid #fca5a5; border-radius: 8px; font-weight: 700; cursor: pointer; display: none; }
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
 
-    /* Screen Lock PIN */
-    #lockScreen {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #0f172a; color: white; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      z-index: 200;
-    }
-    .pin-dots { display: flex; gap: 12px; margin: 20px 0 30px 0; }
-    .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #64748b; }
-    .dot.filled { background: var(--primary); border-color: var(--primary); }
-    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 240px; }
-    .key-btn {
-      width: 64px; height: 64px; border-radius: 50%; background: #1e293b; color: white;
-      border: none; font-size: 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center;
-      justify-content: center;
-    }
-  </style>
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        input, select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .transaction-list {
+            list-style: none;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .transaction-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .transaction-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .transaction-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .transaction-amount.expense { color: var(--danger); }
+        .transaction-amount.income { color: var(--success); }
+
+        .btn-delete {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .btn-delete:hover {
+            color: var(--danger);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE -->
-  <div id="lockScreen" style="display: none;">
-    <h2>🔒 Mes Comptes Perso</h2>
-    <p style="color: #94a3b8; font-size: 0.9rem;">Entrez votre code PIN pour déchiffrer</p>
-    <div class="pin-dots">
-      <div class="dot" id="dot1"></div>
-      <div class="dot" id="dot2"></div>
-      <div class="dot" id="dot3"></div>
-      <div class="dot" id="dot4"></div>
+    <header>
+        <h1>Mon Budget</h1>
+        <div class="header-actions">
+            <button id="btnSecret" onclick="toggleSecretMode()">👁️ Secret</button>
+            <button class="primary" onclick="openModal()">+ Ajouter</button>
+        </div>
+    </header>
+
+    <!-- Solde Global -->
+    <div class="card balance-card">
+        <div class="stat-label">Solde Actuel</div>
+        <div id="balanceDisplay" class="balance-amount positive">0,00 €</div>
     </div>
-    <div class="keypad">
-      <button class="key-btn" onclick="pressPin('1')">1</button>
-      <button class="key-btn" onclick="pressPin('2')">2</button>
-      <button class="key-btn" onclick="pressPin('3')">3</button>
-      <button class="key-btn" onclick="pressPin('4')">4</button>
-      <button class="key-btn" onclick="pressPin('5')">5</button>
-      <button class="key-btn" onclick="pressPin('6')">6</button>
-      <button class="key-btn" onclick="pressPin('7')">7</button>
-      <button class="key-btn" onclick="pressPin('8')">8</button>
-      <button class="key-btn" onclick="pressPin('9')">9</button>
-      <div></div>
-      <button class="key-btn" onclick="pressPin('0')">0</button>
-      <button class="key-btn" onclick="clearPin()">⌫</button>
-    </div>
-  </div>
 
-  <div class="header">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <span id="syncLed" class="sync-status-led" title="Statut synchro GitHub"></span>
-      <h1>Mes Comptes</h1>
-    </div>
-    <div class="header-actions">
-      <button class="btn-icon" title="Rafraîchir" onclick="chargerDonnees()">🔄</button>
-      <button class="btn-icon" title="Réglages" onclick="ouvrirConfig()">⚙️</button>
-    </div>
-  </div>
-
-  <!-- Sélecteur de vue -->
-  <div class="account-selector">
-    <div class="account-tab active" id="tab-courant" onclick="selectAccountView('courant')">💳 Courant</div>
-    <div class="account-tab" id="tab-livret" onclick="selectAccountView('livret')">🐷 Livret</div>
-    <div class="account-tab" id="tab-fixes" onclick="selectAccountView('fixes')">📅 Charges Fixes</div>
-  </div>
-
-  <!-- Carte 1 : Solde Réel -->
-  <div class="dashboard-card" id="dashboardCard">
-    <div class="solde-label" id="soldeLabel">Solde Compte Courant</div>
-    <div id="soldeActuel" class="solde-main">0,00 €</div>
-  </div>
-
-  <!-- Carte 2 : Solde Prévisionnel -->
-  <div class="dashboard-card" id="prevCard">
-    <div class="solde-label">Solde Prévisionnel (Reste du cycle)</div>
-    <div id="soldePrevisionnel" class="solde-main">0,00 €</div>
-  </div>
-
-  <!-- Capacité d'Épargne -->
-  <div class="epargne-box" id="epargneBox">
-    <span>💡 Capacité d'épargne estimée :</span>
-    <span id="capaciteVal" style="font-size:0.95rem; font-weight:800;">0,00 €</span>
-  </div>
-
-  <!-- RÉSUMÉ -->
-  <div class="stats-card" id="statsCard">
+    <!-- Statistiques rapides -->
     <div class="stats-grid">
-      <div class="stat-item">
-        <div style="font-size:0.75rem; color:var(--text-muted);">ENTRÉES MOIS</div>
-        <div id="statCredit" class="stat-val green">+0,00 €</div>
-      </div>
-      <div class="stat-item">
-        <div style="font-size:0.75rem; color:var(--text-muted);">SORTIES MOIS</div>
-        <div id="statDebit" class="stat-val red">-0,00 €</div>
-      </div>
+        <div class="stat-box">
+            <div class="stat-label">Revenus du mois</div>
+            <div id="totalIncome" class="stat-value" style="color: var(--success);">0,00 €</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Dépenses du mois</div>
+            <div id="totalExpense" class="stat-value" style="color: var(--danger);">0,00 €</div>
+        </div>
     </div>
-  </div>
 
-  <!-- RECHERCHE -->
-  <div class="filter-section" id="filterSection">
-    <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher..." oninput="afficherDonnees()">
-  </div>
-
-  <div id="historiqueContainer">Chargement...</div>
-
-  <button class="fab" id="fabAdd" onclick="ouvrirModalAjout()">+</button>
-
-  <!-- MODAL OPÉRATION -->
-  <div id="opModal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modalTitle">Nouvelle opération</h2>
-        <button class="btn-icon" onclick="fermerModalOp()">✕</button>
-      </div>
-      <form onsubmit="sauvegarderOperation(event)">
-        <input type="hidden" id="editOpId">
-
-        <div class="form-group type-selector">
-          <button type="button" id="btnTypeDebit" class="type-btn active debit" onclick="setType('debit')">Débit</button>
-          <button type="button" id="btnTypeCredit" class="type-btn credit" onclick="setType('credit')">Crédit</button>
+    <!-- Liste des transactions -->
+    <div class="card">
+        <div class="section-title">
+            <span>Historique</span>
         </div>
-
-        <div class="form-group" id="groupCompte">
-          <label>Compte concerné</label>
-          <select id="compteOp" class="form-control">
-            <option value="courant">💳 Compte Courant</option>
-            <option value="livret">🐷 Livret D'Épargne</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Montant (€)</label>
-          <input type="number" step="0.01" inputmode="decimal" id="montantOp" class="form-control" placeholder="0.00" required>
-        </div>
-
-        <div class="form-group">
-          <label>Description</label>
-          <input type="text" id="descOp" class="form-control" placeholder="ex: Prêt maison, Courses..." required>
-        </div>
-
-        <div class="form-group">
-          <label>Catégorie</label>
-          <select id="catOp" class="form-control" onchange="toggleDateFinCredit()">
-            <option value="🏠 Logement">🏠 Logement / Crédit</option>
-            <option value="💼 Salaire">💼 Salaire / Revenu</option>
-            <option value="🚗 Transport">🚗 Transport / Auto</option>
-            <option value="📄 Assurance">📄 Assurance / Facture</option>
-            <option value="🛒 Alimentation">🛒 Courses</option>
-            <option value="🎉 Loisirs">🎉 Loisirs</option>
-            <option value="🏦 Épargne">🏦 Épargne</option>
-            <option value="📦 Autre" selected>📦 Autre</option>
-          </select>
-        </div>
-
-        <div class="form-group" id="groupDateFinCredit" style="display: none;">
-          <label>Date de fin du crédit (Mois / Année)</label>
-          <input type="month" id="dateFinCredit" class="form-control">
-        </div>
-
-        <div class="form-group" id="groupDate">
-          <label>Date</label>
-          <input type="date" id="dateOp" class="form-control">
-        </div>
-
-        <div class="form-group" id="groupOptions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
-            <input type="checkbox" id="isPrevision"> Opération prévisionnelle
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
-            <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente
-          </label>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" id="btnDelete" class="btn-delete" onclick="supprimerOperation()">Supprimer</button>
-          <button type="submit" id="btnSubmit" class="btn-submit">Valider</button>
-        </div>
-      </form>
+        <ul id="transactionList" class="transaction-list">
+            <!-- Injecté par JS -->
+        </ul>
     </div>
-  </div>
 
-  <!-- CONFIGURATION -->
-  <div id="configModal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Configuration & Options</h2>
-        <button class="btn-icon" onclick="fermerConfig()">✕</button>
-      </div>
-
-      <div class="form-group"><label>Pseudo GitHub</label><input type="text" id="ghUser" class="form-control"></div>
-      <div class="form-group"><label>Nom du Dépôt</label><input type="text" id="ghRepo" class="form-control"></div>
-      <div class="form-group"><label>Personal Access Token</label><input type="password" id="ghToken" class="form-control"></div>
-      
-      <div class="form-group">
-        <label>Seuil d'alerte / Sécurité (€)</label>
-        <input type="number" id="seuilAlerte" class="form-control" placeholder="ex: 200">
-      </div>
-
-      <div class="form-group">
-        <label>Code PIN (4 chiffres) - *Clé de chiffrement*</label>
-        <input type="password" id="appPin" maxlength="4" placeholder="Requis pour déchiffrer" class="form-control" autocomplete="current-password">
-      </div>
-
-      <button class="btn-submit" style="width:100%; margin-bottom: 10px;" onclick="sauvegarderConfig()">Enregistrer</button>
-      
-      <hr style="border:0; border-top: 1px solid var(--border); margin: 16px 0;">
-
-      <div class="form-group" style="display:flex; flex-direction:column; gap:8px;">
-        <button class="btn-secondary" style="width:100%" onclick="exporterJSON()">📦 Sauvegarder tout (JSON)</button>
-        
-        <label class="btn-secondary" style="width:100%; cursor:pointer; background:#eff6ff; border-color:#bfdbfe; color:var(--primary);">
-          📤 Importer une sauvegarde (JSON)
-          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importerJSON(event)">
-        </label>
-
-        <button class="btn-secondary" style="width:100%" onclick="exporterCSV()">📥 Exporter tout au format CSV</button>
-      </div>
+    <!-- Modal d'ajout simple (simplifiée pour l'exemple) -->
+    <div id="addModal" class="card" style="display:none; margin-top: 20px;">
+        <div class="section-title">Nouvelle transaction</div>
+        <div class="form-group">
+            <label>Libellé</label>
+            <input type="text" id="txTitle" placeholder="Ex: Courses, Salaire...">
+        </div>
+        <div class="form-group">
+            <label>Montant (€)</label>
+            <input type="number" step="0.01" id="txAmount" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <select id="txType">
+                <option value="expense">Dépense</option>
+                <option value="income">Revenu</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="primary" style="flex:1;" onclick="addTransaction()">Enregistrer</button>
+            <button onclick="closeModal()" style="flex:1;">Annuler</button>
+        </div>
     </div>
-  </div>
 
-  <script>
-    let rawData = { operations: [], chargesFixes: [] };
-    let currentType = "debit";
-    let activeAccountView = "courant";
-    let enteredPin = "";
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [
+            { id: 1, title: 'Salaire', amount: 2500, type: 'income', date: '2026-07-01' },
+            { id: 2, title: 'Courses Supermarché', amount: 78.50, type: 'expense', date: '2026-07-27' },
+            { id: 3, title: 'Essence', amount: 45.00, type: 'expense', date: '2026-07-28' }
+        ];
 
-    function setSyncStatus(status) {
-      const led = document.getElementById('syncLed');
-      led.className = `sync-status-led ${status}`;
-    }
+        let secretMode = false;
 
-    /* MOTEUR DE CHIFFREMENT NATIF (AES-GCM 256 bits) */
-    async function getKey(pin) {
-      const enc = new TextEncoder();
-      const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin.padStart(16, "0")), { name: "PBKDF2" }, false, ["deriveKey"]);
-      return crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt: enc.encode("mes_comptes_salt_v2"), iterations: 100000, hash: "SHA-256" },
-        keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
-      );
-    }
-
-    async function encryptData(text, pin) {
-      if (!pin) return text;
-      const key = await getKey(pin);
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const encoded = new TextEncoder().encode(text);
-      const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, encoded);
-      const combined = new Uint8Array(iv.length + ciphertext.byteLength);
-      combined.set(iv, 0);
-      combined.set(new Uint8Array(ciphertext), iv.length);
-      return btoa(String.fromCharCode(...combined));
-    }
-
-    async function decryptData(cipherBase64, pin) {
-      if (!pin) return cipherBase64;
-      try {
-        const key = await getKey(pin);
-        const combined = new Uint8Array(atob(cipherBase64).split('').map(c => c.charCodeAt(0)));
-        const iv = combined.slice(0, 12);
-        const data = combined.slice(12);
-        const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
-        return new TextDecoder().decode(decrypted);
-      } catch (e) {
-        throw new Error("Code PIN invalide ou données altérées.");
-      }
-    }
-
-    function initSecurity() {
-      const savedPin = localStorage.getItem('app_pin');
-      if (savedPin && savedPin.length === 4) {
-        document.getElementById('lockScreen').style.display = 'flex';
-      } else {
-        chargerDonnees();
-      }
-    }
-
-    async function pressPin(num) {
-      if (enteredPin.length < 4) {
-        enteredPin += num;
-        updatePinDots();
-        if (enteredPin.length === 4) {
-          if (enteredPin === localStorage.getItem('app_pin')) {
-            document.getElementById('lockScreen').style.display = 'none';
-            await chargerDonnees();
-          } else { alert("Code PIN incorrect"); clearPin(); }
-        }
-      }
-    }
-    function clearPin() { enteredPin = ""; updatePinDots(); }
-    function updatePinDots() {
-      for (let i = 1; i <= 4; i++) {
-        document.getElementById(`dot${i}`).className = `dot ${i <= enteredPin.length ? 'filled' : ''}`;
-      }
-    }
-
-    function selectAccountView(view) {
-      activeAccountView = view;
-      document.querySelectorAll('.account-tab').forEach(t => t.classList.remove('active'));
-      document.getElementById(`tab-${view}`).classList.add('active');
-
-      const isFixes = view === 'fixes';
-      document.getElementById('statsCard').style.display = isFixes ? 'none' : 'block';
-      document.getElementById('dashboardCard').style.display = isFixes ? 'none' : 'block';
-      document.getElementById('prevCard').style.display = isFixes ? 'none' : 'block';
-      document.getElementById('epargneBox').style.display = (view === 'courant') ? 'flex' : 'none';
-
-      const labels = { 'courant': 'Solde Compte Courant', 'livret': 'Solde Livret d\'Épargne' };
-      if (!isFixes) document.getElementById('soldeLabel').innerText = labels[view];
-
-      afficherDonnees();
-    }
-
-    function setType(type) {
-      currentType = type;
-      document.getElementById('btnTypeDebit').className = `type-btn debit ${type === 'debit' ? 'active' : ''}`;
-      document.getElementById('btnTypeCredit').className = `type-btn credit ${type === 'credit' ? 'active' : ''}`;
-    }
-
-    function toggleDateFinCredit() {
-      const cat = document.getElementById('catOp').value;
-      const displayStyle = cat.includes("Logement") ? 'block' : 'none';
-      document.getElementById('groupDateFinCredit').style.display = displayStyle;
-    }
-
-    function formatMonthYear(ym) {
-      if (!ym) return '';
-      const [year, month] = ym.split('-');
-      return `${month}/${year}`;
-    }
-
-    function dupliquerOperation(id) {
-      const op = rawData.operations.find(o => o.id === id);
-      if (!op) return;
-
-      ouvrirModalAjout();
-      document.getElementById('descOp').value = op.description;
-      document.getElementById('montantOp').value = Math.abs(op.montant);
-      document.getElementById('catOp').value = op.categorie || "📦 Autre";
-      document.getElementById('compteOp').value = op.compte || 'courant';
-      setType(op.type);
-    }
-
-    function ouvrirModalAjout() {
-      document.getElementById('modalTitle').innerText = activeAccountView === 'fixes' ? "Nouvelle charge fixe" : "Nouvelle opération";
-      document.getElementById('editOpId').value = "";
-      document.getElementById('descOp').value = "";
-      document.getElementById('montantOp').value = "";
-      document.getElementById('dateOp').valueAsDate = new Date();
-      document.getElementById('dateFinCredit').value = "";
-      document.getElementById('compteOp').value = activeAccountView === 'livret' ? 'livret' : 'courant';
-      document.getElementById('isPrevision').checked = false;
-      document.getElementById('isChargeFixe').checked = activeAccountView === 'fixes';
-      
-      const isFixes = activeAccountView === 'fixes';
-      document.getElementById('groupDate').style.display = isFixes ? 'none' : 'block';
-      document.getElementById('groupCompte').style.display = isFixes ? 'none' : 'block';
-      document.getElementById('groupOptions').style.display = isFixes ? 'none' : 'flex';
-
-      document.getElementById('catOp').value = "📦 Autre";
-      toggleDateFinCredit();
-      document.getElementById('btnDelete').style.display = 'none';
-      setType('debit');
-      
-      document.getElementById('opModal').classList.add('open');
-      setTimeout(() => document.getElementById('montantOp').focus(), 100);
-    }
-
-    function ouvrirModalEdition(id) {
-      const op = rawData.operations.find(o => o.id === id);
-      if (!op) return;
-
-      document.getElementById('modalTitle').innerText = "Modifier l'opération";
-      document.getElementById('editOpId').value = op.id;
-      document.getElementById('descOp').value = op.description;
-      document.getElementById('montantOp').value = Math.abs(op.montant);
-      document.getElementById('dateOp').value = op.date;
-      document.getElementById('compteOp').value = op.compte || 'courant';
-      document.getElementById('catOp').value = op.categorie || "📦 Autre";
-      document.getElementById('dateFinCredit').value = op.dateFinCredit || "";
-      document.getElementById('isPrevision').checked = !!op.isPrevision;
-      document.getElementById('isChargeFixe').checked = false;
-      
-      document.getElementById('groupDate').style.display = 'block';
-      document.getElementById('groupCompte').style.display = 'block';
-      document.getElementById('groupOptions').style.display = 'flex';
-      toggleDateFinCredit();
-      
-      document.getElementById('btnDelete').style.display = 'block';
-      setType(op.type);
-
-      document.getElementById('opModal').classList.add('open');
-    }
-
-    function ouvrirModalEditionCharge(id) {
-      const cf = rawData.chargesFixes.find(c => c.id === id);
-      if (!cf) return;
-
-      document.getElementById('modalTitle').innerText = "Modifier la charge fixe";
-      document.getElementById('editOpId').value = cf.id;
-      document.getElementById('descOp').value = cf.description;
-      document.getElementById('montantOp').value = Math.abs(cf.montant);
-      document.getElementById('catOp').value = cf.categorie || "📦 Autre";
-      document.getElementById('dateFinCredit').value = cf.dateFinCredit || "";
-      document.getElementById('isChargeFixe').checked = true;
-
-      document.getElementById('groupDate').style.display = 'none';
-      document.getElementById('groupCompte').style.display = 'none';
-      document.getElementById('groupOptions').style.display = 'none';
-      toggleDateFinCredit();
-
-      document.getElementById('btnDelete').style.display = 'block';
-      setType(cf.type);
-
-      document.getElementById('opModal').classList.add('open');
-    }
-
-    function fermerModalOp() { document.getElementById('opModal').classList.remove('open'); }
-    
-    function ouvrirConfig() {
-      const { user, repo, token } = getConfig();
-      document.getElementById('ghUser').value = user || '';
-      document.getElementById('ghRepo').value = repo || '';
-      document.getElementById('ghToken').value = token || '';
-      document.getElementById('seuilAlerte').value = localStorage.getItem('seuil_alerte') || '200';
-      document.getElementById('appPin').value = localStorage.getItem('app_pin') || '';
-      document.getElementById('configModal').classList.add('open');
-    }
-    function fermerConfig() { document.getElementById('configModal').classList.remove('open'); }
-
-    function getConfig() {
-      return {
-        user: localStorage.getItem('gh_user'),
-        repo: localStorage.getItem('gh_repo'),
-        token: localStorage.getItem('gh_token')
-      };
-    }
-
-    function sauvegarderConfig() {
-      localStorage.setItem('gh_user', document.getElementById('ghUser').value.trim());
-      localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
-      localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
-      localStorage.setItem('seuil_alerte', document.getElementById('seuilAlerte').value.trim() || '200');
-      localStorage.setItem('app_pin', document.getElementById('appPin').value.trim());
-      fermerConfig();
-      chargerDonnees();
-    }
-
-    async function chargerDonnees() {
-      const { user, repo, token } = getConfig();
-      if (!user || !repo || !token) { ouvrirConfig(); return; }
-
-      setSyncStatus('orange');
-      const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?timestamp=${Date.now()}`;
-      try {
-        const res = await fetch(url, { headers: { Authorization: `token ${token}` } });
-        if (!res.ok) throw new Error("Erreur réseau");
-        const file = await res.json();
-        let content = decodeURIComponent(escape(atob(file.content)));
-        
-        const pin = localStorage.getItem('app_pin');
-        
-        if (pin && pin.length === 4 && !content.trim().startsWith('{')) {
-          try {
-            content = await decryptData(content, pin);
-          } catch(err) {
-            setSyncStatus('red');
-            alert("Erreur de déchiffrement. Vérifiez votre code PIN.");
-            return;
-          }
+        function toggleSecretMode() {
+            secretMode = !secretMode;
+            const btn = document.getElementById('btnSecret');
+            btn.textContent = secretMode ? "🙈 Masqué" : "👁️ Secret";
+            render();
         }
 
-        rawData = JSON.parse(content);
-        if (!rawData.chargesFixes) rawData.chargesFixes = [];
-        setSyncStatus('green');
-        afficherDonnees();
-      } catch (e) {
-        setSyncStatus('red');
-        alert("Erreur de chargement ou fichier inexistant.");
-      }
-    }
-
-    function afficherDonnees() {
-      if (activeAccountView === 'fixes') {
-        afficherChargesFixes();
-        return;
-      }
-
-      let ops = rawData.operations || [];
-      ops.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      let soldeActuel = 0;
-      let soldePrevisionnel = 0;
-      let mCredit = 0;
-      let mDebit = 0;
-
-      const now = new Date();
-      const currentMonthYear = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      const opsDuCompte = ops.filter(op => (op.compte || 'courant') === activeAccountView);
-      
-      opsDuCompte.forEach(op => {
-        const val = op.type === 'debit' ? -Math.abs(op.montant) : Math.abs(op.montant);
-        
-        if (!op.isPrevision) {
-          soldeActuel += val;
-          const d = new Date(op.date);
-          if (d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) === currentMonthYear) {
-            if (op.type === 'credit') mCredit += Math.abs(op.montant);
-            else mDebit += Math.abs(op.montant);
-          }
+        function formatAmount(amount, type) {
+            if (secretMode) return "••••• €";
+            const formatted = Math.abs(amount).toFixed(2).replace('.', ',') + ' €';
+            return type === 'income' ? `+ ${formatted}` : `- ${formatted}`;
         }
-        soldePrevisionnel += val;
-      });
 
-      if (activeAccountView === 'courant') {
-        (rawData.chargesFixes || []).forEach(cf => {
-          if (!cf.valideCeMois) {
-            soldePrevisionnel += cf.type === 'debit' ? -Math.abs(cf.montant) : Math.abs(cf.montant);
-          }
-        });
-      }
+        function formatRawAmount(amount) {
+            if (secretMode) return "••••• €";
+            return amount.toFixed(2).replace('.', ',') + ' €';
+        }
 
-      document.getElementById('soldeActuel').innerText = `${soldeActuel.toFixed(2)} €`;
-      document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
+        function render() {
+            const listEl = document.getElementById('transactionList');
+            listEl.innerHTML = '';
 
-      const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
-      const capaciteEpargne = Math.max(0, soldePrevisionnel - seuil);
-      document.getElementById('capaciteVal').innerText = `${capaciteEpargne.toFixed(2)} €`;
+            let totalInc = 0;
+            let totalExp = 0;
 
-      const card = document.getElementById('dashboardCard');
-      card.classList.remove('status-green', 'status-orange', 'status-red');
-      if (soldeActuel >= seuil) card.classList.add('status-green');
-      else if (soldeActuel >= 0) card.classList.add('status-orange');
-      else card.classList.add('status-red');
+            transactions.forEach(tx => {
+                if (tx.type === 'income') totalInc += tx.amount;
+                else totalExp += tx.amount;
 
-      const prevCard = document.getElementById('prevCard');
-      prevCard.classList.remove('status-green', 'status-red');
-      if (soldePrevisionnel >= 0) prevCard.classList.add('status-green');
-      else prevCard.classList.add('status-red');
-
-      document.getElementById('statCredit').innerText = `+${mCredit.toFixed(2)} €`;
-      document.getElementById('statDebit').innerText = `-${mDebit.toFixed(2)} €`;
-
-      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-      let filteredOps = opsDuCompte.filter(op => op.description.toLowerCase().includes(searchQuery));
-
-      const groupesParMois = {};
-      filteredOps.forEach(op => {
-        const mois = new Date(op.date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-        if (!groupesParMois[mois]) groupesParMois[mois] = [];
-        groupesParMois[mois].push(op);
-      });
-
-      let html = "";
-      for (const [mois, listeOps] of Object.entries(groupesParMois)) {
-        html += `<div class="month-group"><div class="month-title">${mois}</div><div class="ops-list">`;
-        listeOps.forEach(op => {
-          const d = new Date(op.date);
-          const icon = (op.categorie || "📦").split(' ')[0];
-          const finCreditHtml = op.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(op.dateFinCredit)}</span>` : '';
-          html += `
-            <div class="operation-wrapper">
-              <div class="swipe-delete-bg">🗑️</div>
-              <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" 
-                   onclick="ouvrirModalEdition('${op.id}')"
-                   data-id="${op.id}"
-                   data-type="operation"
-                   ontouchstart="handleTouchStart(event)" 
-                   ontouchmove="handleTouchMove(event)" 
-                   ontouchend="handleTouchEnd(event)"
-                   onmousedown="handleMouseDown(event)"
-                   onmousemove="handleMouseMove(event)"
-                   onmouseup="handleMouseUp(event)"
-                   onmouseleave="handleMouseLeave(event)">
-                <div class="op-left">
-                  <span class="op-cat-icon">${icon}</span>
-                  <div class="op-info">
-                    <span class="op-desc">${op.description}</span>
-                    ${finCreditHtml}
-                    <div style="display:flex; gap:6px;">
-                      ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
-                      <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+                const li = document.createElement('li');
+                li.className = 'transaction-item';
+                
+                li.innerHTML = `
+                    <div class="transaction-info">
+                        <span class="transaction-title">${tx.title}</span>
+                        <span class="transaction-date">${tx.date}</span>
                     </div>
-                  </div>
-                </div>
-                <div class="op-amount-block">
-                  <div class="op-amount ${op.type}">${op.type === 'debit' ? '-' : '+'} ${Math.abs(op.montant).toFixed(2)} €</div>
-                  <div class="op-date">${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</div>
-                </div>
-              </div>
-            </div>`;
-        });
-        html += `</div></div>`;
-      }
+                    <div class="transaction-right">
+                        <span class="transaction-amount ${tx.type}">${formatAmount(tx.amount, tx.type)}</span>
+                        <button class="btn-delete" onclick="deleteTransaction(${tx.id})">&times;</button>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
 
-      document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
-    }
+            const balance = totalInc - totalExp;
+            const balanceEl = document.getElementById('balanceDisplay');
+            balanceEl.textContent = formatRawAmount(balance);
+            balanceEl.className = 'balance-amount ' + (balance >= 0 ? 'positive' : 'negative');
 
-    function afficherChargesFixes() {
-      let charges = rawData.chargesFixes || [];
-      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-      if (searchQuery) charges = charges.filter(cf => cf.description.toLowerCase().includes(searchQuery));
+            document.getElementById('totalIncome').textContent = formatRawAmount(totalInc);
+            document.getElementById('totalExpense').textContent = formatRawAmount(totalExp);
 
-      let html = `<div class="month-group"><div class="month-title">CHARGES ET REVENUS DU CYCLE</div><div class="ops-list">`;
-      charges.forEach(cf => {
-        const icon = (cf.categorie || "📦").split(' ')[0];
-        const estSalaire = cf.categorie.includes("Salaire") || cf.type === "credit";
-        const finCreditHtml = cf.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(cf.dateFinCredit)}</span>` : '';
-        
-        html += `
-          <div class="operation-wrapper">
-            <div class="swipe-delete-bg">🗑️</div>
-            <div class="operation-item" style="${cf.valideCeMois ? 'opacity:0.6;' : ''}" 
-                 onclick="ouvrirModalEditionCharge('${cf.id}')"
-                 data-id="${cf.id}"
-                 data-type="charge"
-                 ontouchstart="handleTouchStart(event)" 
-                 ontouchmove="handleTouchMove(event)" 
-                 ontouchend="handleTouchEnd(event)"
-                 onmousedown="handleMouseDown(event)"
-                 onmousemove="handleMouseMove(event)"
-                 onmouseup="handleMouseUp(event)"
-                 onmouseleave="handleMouseLeave(event)">
-              <div class="op-left">
-                <span class="op-cat-icon">${icon}</span>
-                <div class="op-info">
-                  <span class="op-desc">${cf.description}</span>
-                  ${finCreditHtml}
-                  ${cf.valideCeMois ? 
-                    `<span style="font-size:0.65rem; color:var(--green); font-weight:bold;">✅ Passé ce mois 
-                       <button type="button" style="margin-left:6px; font-size:0.65rem; background:none; border:none; color:var(--red); text-decoration:underline; cursor:pointer;" onclick="event.stopPropagation(); annulerValidationFixe('${cf.id}')">(Annuler)</button>
-                     </span>` : 
-                    (estSalaire ? `<button type="button" class="btn-action-charge salary" onclick="event.stopPropagation(); validerSalaire('${cf.id}')">💰 Valider Salaire</button>` :
-                    `<button type="button" class="btn-action-charge" onclick="event.stopPropagation(); validerChargeFixe('${cf.id}')">⚡ Valider</button>`)}
-                </div>
-              </div>
-              <div class="op-amount-block">
-                <div class="op-amount ${cf.type}">${cf.type === 'debit' ? '-' : '+'} ${Math.abs(cf.montant).toFixed(2)} €</div>
-                <div class="op-date" onclick="event.stopPropagation(); supprimerChargeFixe('${cf.id}')" style="cursor:pointer; color:var(--red); margin-top:4px;">🗑️</div>
-              </div>
-            </div>
-          </div>`;
-      });
-
-      html += `</div></div>`;
-      document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune charge fixe enregistrée.</p>";
-    }
-
-    /* GESTION DU GESTE SWIPE (Glissement pour supprimer) */
-    let touchStartX = 0;
-    let currentX = 0;
-    let activeItem = null;
-    let isSwiping = false;
-
-    function handleTouchStart(e) {
-      touchStartX = e.touches[0].clientX;
-      activeItem = e.currentTarget;
-      isSwiping = false;
-    }
-
-    function handleTouchMove(e) {
-      if (!activeItem) return;
-      currentX = e.touches[0].clientX;
-      let diff = currentX - touchStartX;
-      if (diff < -15) isSwiping = true;
-      if (diff < 0 && diff > -100) {
-        activeItem.style.transform = `translateX(${diff}px)`;
-      }
-    }
-
-    function handleTouchEnd(e) {
-      if (!activeItem) return;
-      let diff = currentX - touchStartX;
-      if (diff < -70) {
-        // Déclencher la suppression par swipe
-        activeItem.style.transform = `translateX(-100%)`;
-        const id = activeItem.getAttribute('data-id');
-        const type = activeItem.getAttribute('data-type');
-        setTimeout(() => confirmerSwipeSuppression(id, type), 200);
-      } else {
-        activeItem.style.transform = `translateX(0px)`;
-      }
-      activeItem = null;
-    }
-
-    // Support Souris pour le test sur desktop
-    let mouseStartX = 0;
-    let isMouseDown = false;
-    let activeMouseItem = null;
-
-    function handleMouseDown(e) {
-      mouseStartX = e.clientX;
-      activeMouseItem = e.currentTarget;
-      isMouseDown = true;
-    }
-
-    function handleMouseMove(e) {
-      if (!isMouseDown || !activeMouseItem) return;
-      let diff = e.clientX - mouseStartX;
-      if (diff < 0 && diff > -100) {
-        activeMouseItem.style.transform = `translateX(${diff}px)`;
-      }
-    }
-
-    function handleMouseUp(e) {
-      if (!isMouseDown || !activeMouseItem) return;
-      let diff = e.clientX - mouseStartX;
-      if (diff < -70) {
-        activeMouseItem.style.transform = `translateX(-100%)`;
-        const id = activeMouseItem.getAttribute('data-id');
-        const type = activeMouseItem.getAttribute('data-type');
-        setTimeout(() => confirmerSwipeSuppression(id, type), 200);
-      } else {
-        activeMouseItem.style.transform = `translateX(0px)`;
-      }
-      isMouseDown = false;
-      activeMouseItem = null;
-    }
-
-    function handleMouseLeave(e) {
-      if (isMouseDown && activeMouseItem) {
-        activeMouseItem.style.transform = `translateX(0px)`;
-        isMouseDown = false;
-        activeMouseItem = null;
-      }
-    }
-
-    async function confirmerSwipeSuppression(id, type) {
-      if (confirm("Confirmer la suppression de cet élément ?")) {
-        if (type === 'charge') {
-          rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
-          await pushToGitHub("Suppression charge fixe (Swipe)");
-        } else {
-          rawData.operations = rawData.operations.filter(o => o.id !== id);
-          await pushToGitHub("Suppression opération (Swipe)");
+            localStorage.setItem('transactions', JSON.stringify(transactions));
         }
-      } else {
-        afficherDonnees(); // Remet en place si annulé
-      }
-    }
 
-    async function annulerValidationFixe(id) {
-      const cf = rawData.chargesFixes.find(c => c.id === id);
-      if (cf && confirm(`Remettre "${cf.description}" en attente ?`)) {
-        cf.valideCeMois = false;
-        await pushToGitHub(`Annulation validation : ${cf.description}`);
-      }
-    }
-
-    async function validerPrevision(id) {
-      const op = rawData.operations.find(o => o.id === id);
-      if (op) {
-        op.isPrevision = false;
-        await pushToGitHub(`Validation prévision : ${op.description}`);
-      }
-    }
-
-    async function validerChargeFixe(id) {
-      const cf = rawData.chargesFixes.find(c => c.id === id);
-      if (!cf) return;
-
-      rawData.operations.push({
-        id: Date.now().toString(),
-        date: new Date().toISOString().slice(0, 10),
-        compte: 'courant',
-        description: cf.description,
-        montant: cf.montant,
-        type: cf.type,
-        categorie: cf.categorie,
-        dateFinCredit: cf.dateFinCredit || null,
-        isPrevision: false
-      });
-      cf.valideCeMois = true;
-      await pushToGitHub(`Validation charge : ${cf.description}`);
-    }
-
-    async function validerSalaire(id) {
-      const cf = rawData.chargesFixes.find(c => c.id === id);
-      if (!cf) return;
-
-      const sMontant = prompt(`Saisis le montant exact du salaire (€) :`, cf.montant);
-      if (!sMontant) return;
-
-      const montantExact = parseFloat(sMontant);
-      rawData.operations.push({
-        id: Date.now().toString(),
-        date: new Date().toISOString().slice(0, 10),
-        compte: 'courant',
-        description: cf.description,
-        montant: montantExact,
-        type: 'credit',
-        categorie: cf.categorie,
-        isPrevision: false
-      });
-
-      if (confirm("Réinitialiser les charges fixes pour lancer le NOUVEAU MOIS ?")) {
-        rawData.chargesFixes.forEach(c => c.valideCeMois = (c.id === id));
-      } else {
-        cf.valideCeMois = true;
-      }
-
-      await pushToGitHub(`Réception Salaire : ${montantExact} €`);
-    }
-
-    async function supprimerChargeFixe(id) {
-      if (confirm("Supprimer cette charge fixe ?")) {
-        rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
-        await pushToGitHub("Suppression charge fixe");
-      }
-    }
-
-    async function supprimerOperation() {
-      const id = document.getElementById('editOpId').value;
-      if (!id || !confirm("Supprimer l'élément sélectionné ?")) return;
-      
-      const isFixe = document.getElementById('isChargeFixe').checked;
-      if (isFixe) {
-        rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
-        await pushToGitHub("Suppression charge fixe");
-      } else {
-        rawData.operations = rawData.operations.filter(o => o.id !== id);
-        await pushToGitHub("Suppression opération");
-      }
-    }
-
-    function exporterJSON() {
-      const backupData = {
-        app_version: "3.1",
-        date_export: new Date().toISOString(),
-        config: {
-          gh_user: localStorage.getItem('gh_user') || '',
-          gh_repo: localStorage.getItem('gh_repo') || '',
-          gh_token: localStorage.getItem('gh_token') || '',
-          seuil_alerte: localStorage.getItem('seuil_alerte') || '200',
-          app_pin: localStorage.getItem('app_pin') || ''
-        },
-        data: rawData
-      };
-
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `comptes_perso_sauvegarde.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    function importerJSON(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        try {
-          const imported = JSON.parse(e.target.result);
-          if (!imported.data || !imported.config) return alert("Format de fichier invalide.");
-          if (!confirm("Remplacer vos données actuelles par cette sauvegarde ?")) return;
-
-          if (imported.config.gh_user) localStorage.setItem('gh_user', imported.config.gh_user);
-          if (imported.config.gh_repo) localStorage.setItem('gh_repo', imported.config.gh_repo);
-          if (imported.config.gh_token) localStorage.setItem('gh_token', imported.config.gh_token);
-          if (imported.config.seuil_alerte) localStorage.setItem('seuil_alerte', imported.config.seuil_alerte);
-          if (imported.config.app_pin !== undefined) localStorage.setItem('app_pin', imported.config.app_pin);
-
-          rawData = imported.data;
-          if (!rawData.chargesFixes) rawData.chargesFixes = [];
-
-          await pushToGitHub("Restauration complète depuis JSON");
-          alert("Restauration réussie !");
-          fermerConfig();
-          location.reload();
-        } catch (err) { alert("Erreur lors de l'import : " + err.message); }
-      };
-      reader.readAsText(file);
-    }
-
-    function exporterCSV() {
-      let ops = rawData.operations || [];
-      let charges = rawData.chargesFixes || [];
-      let csv = "TypeDonnee;ID;Date;Type;Compte;Categorie;Description;Montant;Prevision;FinCredit\n";
-
-      ops.forEach(o => {
-        csv += `"OPERATION";"${o.id}";"${o.date}";"${o.type}";"${o.compte || 'courant'}";"${o.categorie || ''}";"${o.description}";${o.montant};"${o.isPrevision ? 'OUI' : 'NON'}";"${o.dateFinCredit || ''}"\n`;
-      });
-      charges.forEach(c => {
-        csv += `"CHARGE_FIXE";"${c.id}";"Récurrente";"${c.type}";"courant";"${c.categorie || ''}";"${c.description}";${c.montant};"NON";"${c.dateFinCredit || ''}"\n`;
-      });
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      link.setAttribute("href", URL.createObjectURL(blob));
-      link.setAttribute("download", `comptes_perso_export.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    async function pushToGitHub(commitMessage) {
-      const { user, repo, token } = getConfig();
-      const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
-      
-      setSyncStatus('orange');
-      const getRes = await fetch(url, { headers: { Authorization: `token ${token}` } });
-      if (!getRes.ok) {
-        setSyncStatus('red');
-        return alert("Erreur d'accès à GitHub");
-      }
-      const fileData = await getRes.json();
-
-      let textJSON = JSON.stringify(rawData, null, 2);
-      const pin = localStorage.getItem('app_pin');
-      
-      if (pin && pin.length === 4) {
-        textJSON = await encryptData(textJSON, pin);
-      }
-
-      const contentBase64 = btoa(unescape(encodeURIComponent(textJSON)));
-
-      const putRes = await fetch(url, {
-        method: 'PUT',
-        headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: commitMessage, content: contentBase64, sha: fileData.sha })
-      });
-
-      if (putRes.ok) {
-        setSyncStatus('green');
-        fermerModalOp();
-        afficherDonnees();
-        setTimeout(chargerDonnees, 1500);
-      } else {
-        setSyncStatus('red');
-        alert("Erreur de mise à jour sur GitHub.");
-      }
-    }
-
-    async function sauvegarderOperation(e) {
-      e.preventDefault();
-      const editId = document.getElementById('editOpId').value;
-      const isFixe = document.getElementById('isChargeFixe').checked;
-
-      const itemData = {
-        id: editId || Date.now().toString(),
-        description: document.getElementById('descOp').value,
-        montant: parseFloat(document.getElementById('montantOp').value),
-        categorie: document.getElementById('catOp').value,
-        dateFinCredit: document.getElementById('dateFinCredit').value || null,
-        type: currentType,
-        compte: document.getElementById('compteOp').value
-      };
-
-      if (isFixe) {
-        itemData.valideCeMois = false;
-        if (editId) {
-          const idx = rawData.chargesFixes.findIndex(c => c.id === editId);
-          if (idx !== -1) rawData.chargesFixes[idx] = itemData;
-        } else {
-          rawData.chargesFixes.push(itemData);
+        function openModal() {
+            document.getElementById('addModal').style.display = 'block';
         }
-        await pushToGitHub(`Enregistrement Charge Fixe : ${itemData.description}`);
-      } else {
-        itemData.date = document.getElementById('dateOp').value;
-        itemData.isPrevision = document.getElementById('isPrevision').checked;
-        if (editId) {
-          const idx = rawData.operations.findIndex(o => o.id === editId);
-          if (idx !== -1) rawData.operations[idx] = itemData;
-        } else {
-          rawData.operations.push(itemData);
-        }
-        await pushToGitHub(`Enregistrement Dépense : ${itemData.description}`);
-      }
-    }
 
-    initSecurity();
-  </script>
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+
+        function addTransaction() {
+            const title = document.getElementById('txTitle').value.trim();
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const type = document.getElementById('txType').value;
+
+            if (!title || isNaN(amount) || amount <= 0) {
+                alert('Veuillez remplir correctement les champs.');
+                return;
+            }
+
+            const newTx = {
+                id: Date.now(),
+                title,
+                amount,
+                type,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            transactions.unshift(newTx);
+            document.getElementById('txTitle').value = '';
+            document.getElementById('txAmount').value = '';
+            closeModal();
+            render();
+        }
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(tx => tx.id !== id);
+            render();
+        }
+
+        // Premier affichage
+        render();
+    </script>
 </body>
 </html>
