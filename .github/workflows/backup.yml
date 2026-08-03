@@ -6,6 +6,10 @@ on:
     - cron: '59 23 * * 0'
   workflow_dispatch: # Permet de lancer une sauvegarde manuellement si besoin
 
+# --- AJOUT ICI DES PERMISSIONS D'ÉCRITURE ---
+permissions:
+  contents: write
+
 jobs:
   backup:
     runs-on: ubuntu-latest
