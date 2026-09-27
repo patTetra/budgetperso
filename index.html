@@ -324,6 +324,7 @@
     <div class="account-tab active" id="tab-courant" onclick="selectAccountView('courant')">💳 Courant</div>
     <div class="account-tab" id="tab-livret" onclick="selectAccountView('livret')">🐷 Livret</div>
     <div class="account-tab" id="tab-fixes" onclick="selectAccountView('fixes')">📅 Charges Fixes</div>
+    <div class="account-tab" id="tab-objectif" onclick="selectAccountView('objectif')">🎯 Objectif</div>
   </div>
 
   <!-- Carte 1 : Solde Réel -->
@@ -336,6 +337,24 @@
   <div class="dashboard-card" id="prevCard">
     <div class="solde-label">Solde Prévisionnel (Reste du cycle)</div>
     <div id="soldePrevisionnel" class="solde-main">0,00 €</div>
+  </div>
+
+  <!-- Carte 3 : Objectif -->
+  <div class="dashboard-card" id="objectifCard" style="display:none; background: linear-gradient(135deg, #7c3aed, #5b21b6) !important;">
+    <div class="solde-label" id="objectifNomLabel">🎯 Objectif</div>
+    <div id="objectifMontantActuel" class="solde-main">0,00 €</div>
+    <div style="margin-top:10px; background: rgba(255,255,255,0.25); border-radius:8px; height:8px; overflow:hidden;">
+      <div id="objectifProgressBar" style="height:100%; background:#ffffff; width:0%; transition: width 0.3s ease;"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.75rem; color:rgba(255,255,255,0.9);">
+      <span>Cible : <span id="objectifCibleVal">0,00 €</span></span>
+      <span>Reste : <span id="objectifResteVal">0,00 €</span></span>
+    </div>
+  </div>
+  <div id="objectifActions" style="display:none; gap:8px; margin-bottom:16px;">
+    <button class="btn-submit" style="flex:2;" onclick="ouvrirModalVersement('depot')">💰 Verser</button>
+    <button class="btn-secondary" style="flex:2;" onclick="ouvrirModalVersement('retrait')">🏧 Retirer</button>
+    <button class="btn-icon" style="flex:0; background:var(--surface); border:1px solid var(--border); border-radius:8px;" onclick="ouvrirModalEditionObjectif()" title="Modifier l'objectif">✏️</button>
   </div>
 
   <!-- Capacité d'Épargne -->
@@ -480,8 +499,36 @@
     </div>
   </div>
 
+  <!-- MODAL OBJECTIF -->
+  <div id="objectifModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🎯 Définir l'objectif</h2>
+        <button class="btn-icon" onclick="fermerModalObjectif()">✕</button>
+      </div>
+      <form onsubmit="sauvegarderObjectif(event)">
+        <div class="form-group">
+          <label>Nom de l'objectif</label>
+          <input type="text" id="objNom" class="form-control" placeholder="ex: Vacances, Voiture..." required>
+        </div>
+        <div class="form-group">
+          <label>Montant cible (€)</label>
+          <input type="number" step="0.01" inputmode="decimal" id="objCible" class="form-control" placeholder="0.00" required>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
-    let rawData = { operations: [], chargesFixes: [] };
+    let rawData = { operations: [], chargesFixes: [], objectif: { nom: '', montantCible: 0, montantActuel: 0, historique: [] } };
+
+    function ensureObjectif() {
+      if (!rawData.objectif) rawData.objectif = { nom: '', montantCible: 0, montantActuel: 0, historique: [] };
+      if (!rawData.objectif.historique) rawData.objectif.historique = [];
+    }
     let currentType = "debit";
     let activeAccountView = "courant";
     let enteredPin = "";
@@ -576,13 +623,17 @@
       document.getElementById(`tab-${view}`).classList.add('active');
 
       const isFixes = view === 'fixes';
-      document.getElementById('statsCard').style.display = isFixes ? 'none' : 'block';
-      document.getElementById('dashboardCard').style.display = isFixes ? 'none' : 'block';
-      document.getElementById('prevCard').style.display = isFixes ? 'none' : 'block';
+      const isObjectif = view === 'objectif';
+      document.getElementById('statsCard').style.display = (isFixes || isObjectif) ? 'none' : 'block';
+      document.getElementById('dashboardCard').style.display = (isFixes || isObjectif) ? 'none' : 'block';
+      document.getElementById('prevCard').style.display = (isFixes || isObjectif) ? 'none' : 'block';
       document.getElementById('epargneBox').style.display = (view === 'courant') ? 'flex' : 'none';
+      document.getElementById('objectifCard').style.display = isObjectif ? 'block' : 'none';
+      document.getElementById('objectifActions').style.display = isObjectif ? 'flex' : 'none';
+      document.getElementById('fabAdd').style.display = isObjectif ? 'none' : 'flex';
 
       const labels = { 'courant': 'Solde Compte Courant', 'livret': 'Solde Livret d\'Épargne' };
-      if (!isFixes) document.getElementById('soldeLabel').innerText = labels[view];
+      if (!isFixes && !isObjectif) document.getElementById('soldeLabel').innerText = labels[view];
 
       afficherDonnees();
     }
@@ -748,6 +799,7 @@
 
         rawData = JSON.parse(content);
         if (!rawData.chargesFixes) rawData.chargesFixes = [];
+        ensureObjectif();
         setSyncStatus('green');
         afficherDonnees();
       } catch (e) {
@@ -759,6 +811,10 @@
     function afficherDonnees() {
       if (activeAccountView === 'fixes') {
         afficherChargesFixes();
+        return;
+      }
+      if (activeAccountView === 'objectif') {
+        afficherObjectif();
         return;
       }
 
@@ -900,6 +956,123 @@
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune charge fixe enregistrée.</p>";
     }
 
+    function afficherObjectif() {
+      ensureObjectif();
+      const obj = rawData.objectif;
+      const cible = obj.montantCible || 0;
+      const actuel = obj.montantActuel || 0;
+      const reste = Math.max(0, cible - actuel);
+      const pct = cible > 0 ? Math.min(100, (actuel / cible) * 100) : 0;
+
+      document.getElementById('objectifNomLabel').innerText = obj.nom ? `🎯 ${obj.nom}` : '🎯 Objectif (à définir)';
+      document.getElementById('objectifMontantActuel').innerText = `${actuel.toFixed(2)} €`;
+      document.getElementById('objectifCibleVal').innerText = `${cible.toFixed(2)} €`;
+      document.getElementById('objectifResteVal').innerText = `${reste.toFixed(2)} €`;
+      document.getElementById('objectifProgressBar').style.width = `${pct}%`;
+
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      let histo = (obj.historique || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      let html = `<div class="month-group"><div class="month-title">HISTORIQUE DE L'OBJECTIF</div><div class="ops-list">`;
+      if (histo.length === 0) {
+        html += `<div class="operation-item"><span style="color:var(--text-muted); font-size:0.85rem;">Aucun mouvement pour l'instant. Utilise ✏️ pour définir ton objectif puis 💰 pour verser.</span></div>`;
+      } else {
+        histo.forEach(h => {
+          const d = new Date(h.date);
+          const isDepot = h.type === 'depot';
+          html += `
+            <div class="operation-wrapper">
+              <div class="operation-item">
+                <div class="op-left">
+                  <span class="op-cat-icon">${isDepot ? '💰' : '🏧'}</span>
+                  <div class="op-info">
+                    <span class="op-desc">${isDepot ? 'Versement' : 'Retrait'}</span>
+                  </div>
+                </div>
+                <div class="op-amount-block">
+                  <div class="op-amount ${isDepot ? 'credit' : 'debit'}">${isDepot ? '+' : '-'} ${Math.abs(h.montant).toFixed(2)} €</div>
+                  <div class="op-date">${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+                </div>
+              </div>
+            </div>`;
+        });
+      }
+      html += `</div></div>`;
+      document.getElementById('historiqueContainer').innerHTML = html;
+    }
+
+    function ouvrirModalEditionObjectif() {
+      ensureObjectif();
+      document.getElementById('objNom').value = rawData.objectif.nom || '';
+      document.getElementById('objCible').value = rawData.objectif.montantCible || '';
+      document.getElementById('objectifModal').classList.add('open');
+    }
+    function fermerModalObjectif() { document.getElementById('objectifModal').classList.remove('open'); }
+
+    async function sauvegarderObjectif(e) {
+      e.preventDefault();
+      ensureObjectif();
+      rawData.objectif.nom = document.getElementById('objNom').value.trim();
+      rawData.objectif.montantCible = parseFloat(document.getElementById('objCible').value) || 0;
+      document.getElementById('objectifModal').classList.remove('open');
+      await pushToGitHub(`Définition objectif : ${rawData.objectif.nom}`);
+    }
+
+    async function ouvrirModalVersement(type) {
+      ensureObjectif();
+      const obj = rawData.objectif;
+      if (!obj.nom) {
+        alert("Commence par définir ton objectif (nom et montant cible) avec le crayon ✏️.");
+        return;
+      }
+
+      if (type === 'depot') {
+        const saisie = prompt(`Montant à verser sur "${obj.nom}" (débité du compte courant) :`);
+        if (!saisie) return;
+        const montant = parseFloat(saisie.replace(',', '.'));
+        if (isNaN(montant) || montant <= 0) return alert("Montant invalide.");
+
+        obj.montantActuel = (obj.montantActuel || 0) + montant;
+        obj.historique.push({ id: Date.now().toString(), date: new Date().toISOString().slice(0, 10), montant, type: 'depot' });
+
+        rawData.operations.push({
+          id: (Date.now() + 1).toString(),
+          date: new Date().toISOString().slice(0, 10),
+          compte: 'courant',
+          description: `🎯 Versement objectif : ${obj.nom}`,
+          montant: montant,
+          type: 'debit',
+          categorie: '🏦 Épargne',
+          isPrevision: false
+        });
+
+        await pushToGitHub(`Versement objectif : ${montant} €`);
+      } else {
+        const disponible = (obj.montantActuel || 0).toFixed(2);
+        const saisie = prompt(`Montant à retirer de "${obj.nom}" (crédité sur le compte courant) — disponible : ${disponible} € :`);
+        if (!saisie) return;
+        const montant = parseFloat(saisie.replace(',', '.'));
+        if (isNaN(montant) || montant <= 0) return alert("Montant invalide.");
+        if (montant > (obj.montantActuel || 0)) return alert("Tu ne peux pas retirer plus que ce qui est épargné sur cet objectif.");
+
+        obj.montantActuel -= montant;
+        obj.historique.push({ id: Date.now().toString(), date: new Date().toISOString().slice(0, 10), montant, type: 'retrait' });
+
+        rawData.operations.push({
+          id: (Date.now() + 1).toString(),
+          date: new Date().toISOString().slice(0, 10),
+          compte: 'courant',
+          description: `🎯 Retrait objectif : ${obj.nom}`,
+          montant: montant,
+          type: 'credit',
+          categorie: '🏦 Épargne',
+          isPrevision: false
+        });
+
+        await pushToGitHub(`Retrait objectif : ${montant} €`);
+      }
+    }
+
     async function annulerValidationFixe(id) {
       const cf = rawData.chargesFixes.find(c => c.id === id);
       if (cf && confirm(`Remettre "${cf.description}" en attente ?`)) {
@@ -1026,6 +1199,7 @@
 
           rawData = imported.data;
           if (!rawData.chargesFixes) rawData.chargesFixes = [];
+          ensureObjectif();
 
           await pushToGitHub("Restauration complète depuis JSON");
           alert("Restauration réussie !");
