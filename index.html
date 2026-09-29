@@ -165,6 +165,7 @@
 
     /* Historique */
     .month-group { margin-bottom: 20px; }
+    .day-separator { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin: 14px 0 6px 4px; letter-spacing: 0.03em; }
     .month-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
     .ops-list { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
     
@@ -403,10 +404,16 @@
 
         <div class="form-group" id="groupCompte">
           <label>Compte concerné</label>
-          <select id="compteOp" class="form-control">
+          <select id="compteOp" class="form-control" onchange="toggleVersementEpargne()">
             <option value="courant">💳 Compte Courant</option>
             <option value="livret">🐷 Livret D'Épargne</option>
           </select>
+        </div>
+
+        <div class="form-group" id="groupVersementEpargne" style="display:none;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
+            <input type="checkbox" id="isVersementEpargne" checked> Débiter automatiquement le Compte Courant du même montant
+          </label>
         </div>
 
         <div class="form-group">
@@ -642,6 +649,13 @@
       currentType = type;
       document.getElementById('btnTypeDebit').className = `type-btn debit ${type === 'debit' ? 'active' : ''}`;
       document.getElementById('btnTypeCredit').className = `type-btn credit ${type === 'credit' ? 'active' : ''}`;
+      toggleVersementEpargne();
+    }
+
+    function toggleVersementEpargne() {
+      const compteHidden = document.getElementById('groupCompte').style.display === 'none';
+      const isLivretCredit = document.getElementById('compteOp').value === 'livret' && currentType === 'credit';
+      document.getElementById('groupVersementEpargne').style.display = (!compteHidden && isLivretCredit) ? 'flex' : 'none';
     }
 
     function toggleDateFinCredit() {
@@ -678,6 +692,7 @@
       document.getElementById('compteOp').value = activeAccountView === 'livret' ? 'livret' : 'courant';
       document.getElementById('isPrevision').checked = false;
       document.getElementById('isChargeFixe').checked = activeAccountView === 'fixes';
+      document.getElementById('isVersementEpargne').checked = true;
       
       const isFixes = activeAccountView === 'fixes';
       document.getElementById('groupDate').style.display = isFixes ? 'none' : 'block';
@@ -878,40 +893,49 @@
 
       const groupesParMois = {};
       filteredOps.forEach(op => {
-        const mois = new Date(op.date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-        if (!groupesParMois[mois]) groupesParMois[mois] = [];
-        groupesParMois[mois].push(op);
+        const d = new Date(op.date);
+        const mois = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        const jourKey = (op.date || '').slice(0, 10);
+        if (!groupesParMois[mois]) groupesParMois[mois] = {};
+        if (!groupesParMois[mois][jourKey]) groupesParMois[mois][jourKey] = [];
+        groupesParMois[mois][jourKey].push(op);
       });
 
       let html = "";
-      for (const [mois, listeOps] of Object.entries(groupesParMois)) {
-        html += `<div class="month-group"><div class="month-title">${mois}</div><div class="ops-list">`;
-        listeOps.forEach(op => {
-          const d = new Date(op.date);
-          const icon = (op.categorie || "📦").split(' ')[0];
-          const finCreditHtml = op.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(op.dateFinCredit)}</span>` : '';
-          html += `
-            <div class="operation-wrapper">
-              <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" onclick="ouvrirModalEdition('${op.id}')">
-                <div class="op-left">
-                  <span class="op-cat-icon">${icon}</span>
-                  <div class="op-info">
-                    <span class="op-desc">${op.description}</span>
-                    ${finCreditHtml}
-                    <div style="display:flex; gap:6px;">
-                      ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
-                      <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+      for (const [mois, jours] of Object.entries(groupesParMois)) {
+        html += `<div class="month-group"><div class="month-title">${mois}</div>`;
+        const joursTries = Object.keys(jours).sort((a, b) => new Date(b) - new Date(a));
+        joursTries.forEach(jourKey => {
+          const dJour = new Date(jourKey + 'T00:00:00');
+          let libelleJour = dJour.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+          libelleJour = libelleJour.charAt(0).toUpperCase() + libelleJour.slice(1);
+          html += `<div class="day-separator">${libelleJour}</div><div class="ops-list">`;
+          jours[jourKey].forEach(op => {
+            const icon = (op.categorie || "📦").split(' ')[0];
+            const finCreditHtml = op.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(op.dateFinCredit)}</span>` : '';
+            html += `
+              <div class="operation-wrapper">
+                <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" onclick="ouvrirModalEdition('${op.id}')">
+                  <div class="op-left">
+                    <span class="op-cat-icon">${icon}</span>
+                    <div class="op-info">
+                      <span class="op-desc">${op.description}</span>
+                      ${finCreditHtml}
+                      <div style="display:flex; gap:6px;">
+                        ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
+                        <button type="button" class="btn-dup" onclick="event.stopPropagation(); dupliquerOperation('${op.id}')">📋 Dupliquer</button>
+                      </div>
                     </div>
                   </div>
+                  <div class="op-amount-block">
+                    <div class="op-amount ${op.type}">${op.type === 'debit' ? '-' : '+'} ${Math.abs(op.montant).toFixed(2)} €</div>
+                  </div>
                 </div>
-                <div class="op-amount-block">
-                  <div class="op-amount ${op.type}">${op.type === 'debit' ? '-' : '+'} ${Math.abs(op.montant).toFixed(2)} €</div>
-                  <div class="op-date">${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</div>
-                </div>
-              </div>
-            </div>`;
+              </div>`;
+          });
+          html += `</div>`;
         });
-        html += `</div></div>`;
+        html += `</div>`;
       }
 
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
@@ -1152,7 +1176,11 @@
         rawData.chargesFixes = rawData.chargesFixes.filter(c => c.id !== id);
         await pushToGitHub("Suppression charge fixe");
       } else {
-        rawData.operations = rawData.operations.filter(o => o.id !== id);
+        const opASupprimer = rawData.operations.find(o => o.id === id);
+        const idsASupprimer = [id];
+        if (opASupprimer && opASupprimer.operationLieeId) idsASupprimer.push(opASupprimer.operationLieeId);
+        rawData.operations.forEach(o => { if (o.operationLieeId === id) idsASupprimer.push(o.id); });
+        rawData.operations = rawData.operations.filter(o => !idsASupprimer.includes(o.id));
         await pushToGitHub("Suppression opération");
       }
     }
@@ -1296,9 +1324,30 @@
       } else {
         itemData.date = document.getElementById('dateOp').value;
         itemData.isPrevision = document.getElementById('isPrevision').checked;
+
+        const estVersementEpargneAuto = !editId && itemData.compte === 'livret' && itemData.type === 'credit' && document.getElementById('isVersementEpargne').checked;
+
         if (editId) {
           const idx = rawData.operations.findIndex(o => o.id === editId);
-          if (idx !== -1) rawData.operations[idx] = itemData;
+          if (idx !== -1) {
+            itemData.operationLieeId = rawData.operations[idx].operationLieeId || null;
+            rawData.operations[idx] = itemData;
+          }
+        } else if (estVersementEpargneAuto) {
+          const miroirId = (Date.now() + 1).toString();
+          itemData.operationLieeId = miroirId;
+          rawData.operations.push(itemData);
+          rawData.operations.push({
+            id: miroirId,
+            date: itemData.date,
+            compte: 'courant',
+            description: `🐷 Versement épargne : ${itemData.description}`,
+            montant: itemData.montant,
+            type: 'debit',
+            categorie: '🏦 Épargne',
+            isPrevision: itemData.isPrevision,
+            operationLieeId: itemData.id
+          });
         } else {
           rawData.operations.push(itemData);
         }
