@@ -833,7 +833,8 @@
         afficherDonnees();
       } catch (e) {
         setSyncStatus('red');
-        alert("Erreur de chargement ou fichier inexistant.");
+        console.error(e);
+        alert("Erreur de chargement ou fichier inexistant.\n\nDétail : " + e.message);
       }
     }
 
@@ -885,7 +886,14 @@
       document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
 
       const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
-      if (activeAccountView === 'courant') afficherSoldeEstime(soldePrevisionnel);
+      if (activeAccountView === 'courant') {
+        try { afficherSoldeEstime(soldePrevisionnel); }
+        catch (err) {
+          console.error(err);
+          document.getElementById('soldeEstimeVal').innerText = '—';
+          document.getElementById('soldeEstimeDetail').innerText = 'Calcul impossible : ' + err.message;
+        }
+      }
 
       const card = document.getElementById('dashboardCard');
       card.classList.remove('status-green', 'status-orange', 'status-red');
@@ -962,15 +970,17 @@
       if (op.type !== 'debit') return false;
       if (op.chargeFixeId) return false;
       if (descsFixes.has(normTxt(op.description))) return false;
-      if ((op.categorie || '').includes('Épargne') || op.operationLieeId) return false;
+      if (String(op.categorie || '').includes('Épargne') || op.operationLieeId) return false;
       if (Math.abs(op.montant) >= seuilExc) return false;
       return true;
     }
 
     function calculerDepensesVariables() {
       const seuilExc = parseFloat(localStorage.getItem('seuil_exceptionnel')) || 300;
-      const descsFixes = new Set((rawData.chargesFixes || []).map(cf => normTxt(cf.description)));
-      const ops = (rawData.operations || []).filter(op => (op.compte || 'courant') === 'courant' && op.date);
+      const descsFixes = new Set((rawData.chargesFixes || []).filter(Boolean).map(cf => normTxt(cf.description)));
+      const ops = (rawData.operations || [])
+        .filter(op => op && (op.compte || 'courant') === 'courant' && op.date)
+        .map(op => ({ ...op, date: String(op.date), categorie: String(op.categorie || ''), montant: parseFloat(op.montant) || 0 }));
 
       // Débuts de cycle = réceptions de salaire (regroupées si moins de 15 jours d'écart)
       const datesSalaire = ops
