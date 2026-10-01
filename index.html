@@ -871,14 +871,20 @@
       const now = new Date();
       const currentMonthYear = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
       const opsDuCompte = ops.filter(op => (op.compte || 'courant') === activeAccountView);
+
+      // Entrées/sorties du « mois » = depuis la dernière paie (sinon mois calendaire)
+      let debutCycleStats = null;
+      try { debutCycleStats = calculerDepensesVariables().debutCycle; } catch (err) { console.error(err); }
+      const dansMoisEnCours = op => debutCycleStats
+        ? String(op.date || '').slice(0, 10) >= debutCycleStats
+        : new Date(op.date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) === currentMonthYear;
       
       opsDuCompte.forEach(op => {
         const val = op.type === 'debit' ? -Math.abs(op.montant) : Math.abs(op.montant);
         
         if (!op.isPrevision) {
           soldeActuel += val;
-          const d = new Date(op.date);
-          if (d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) === currentMonthYear) {
+          if (dansMoisEnCours(op)) {
             if (op.type === 'credit') mCredit += Math.abs(op.montant);
             else mDebit += Math.abs(op.montant);
           }
