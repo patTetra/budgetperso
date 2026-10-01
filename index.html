@@ -810,7 +810,14 @@
       const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?timestamp=${Date.now()}`;
       try {
         const res = await fetch(url, { headers: { Authorization: `token ${token}` } });
-        if (!res.ok) throw new Error("Erreur réseau");
+        if (!res.ok) {
+          const causes = {
+            401: "token GitHub invalide ou expiré",
+            403: "accès refusé (droits du token ou limite d'appels GitHub)",
+            404: "data.json introuvable, ou pseudo/dépôt incorrect dans les Réglages"
+          };
+          throw new Error(`GitHub ${res.status} : ${causes[res.status] || res.statusText || 'erreur inconnue'}`);
+        }
         const file = await res.json();
         let content = decodeURIComponent(escape(atob(file.content)));
         
