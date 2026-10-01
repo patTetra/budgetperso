@@ -133,9 +133,13 @@
       font-weight: 600;
       margin-bottom: 16px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 4px;
     }
+    .epargne-box .estim-row { display: flex; justify-content: space-between; align-items: center; }
+    .epargne-box .estim-detail { font-size: 0.7rem; font-weight: 500; opacity: 0.85; }
+    .epargne-box.negatif { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+    body.secret-mode .epargne-box.negatif { background: #450a0a; border-color: #7f1d1d; color: #fca5a5; }
     body.secret-mode .epargne-box {
       background: #1e1b4b;
       border-color: #3730a3;
@@ -358,10 +362,13 @@
     <button class="btn-icon" style="flex:0; background:var(--surface); border:1px solid var(--border); border-radius:8px;" onclick="ouvrirModalEditionObjectif()" title="Modifier l'objectif">✏️</button>
   </div>
 
-  <!-- Capacité d'Épargne -->
+  <!-- Solde estimé fin de mois -->
   <div class="epargne-box" id="epargneBox">
-    <span>💡 Capacité d'épargne estimée :</span>
-    <span id="capaciteVal" style="font-size:0.95rem; font-weight:800;">0,00 €</span>
+    <div class="estim-row">
+      <span>📊 Solde estimé fin de mois :</span>
+      <span id="soldeEstimeVal" style="font-size:0.95rem; font-weight:800;">0,00 €</span>
+    </div>
+    <div class="estim-detail" id="soldeEstimeDetail"></div>
   </div>
 
   <!-- RÉSUMÉ -->
@@ -482,6 +489,11 @@
       <div class="form-group">
         <label>Seuil d'alerte / Sécurité (€)</label>
         <input type="number" id="seuilAlerte" class="form-control" placeholder="ex: 200">
+      </div>
+
+      <div class="form-group">
+        <label>Dépense exceptionnelle à partir de (€) — exclue de la moyenne</label>
+        <input type="number" id="seuilExceptionnel" class="form-control" placeholder="ex: 300">
       </div>
 
       <div class="form-group">
@@ -765,6 +777,7 @@
       document.getElementById('ghRepo').value = repo || '';
       document.getElementById('ghToken').value = token || '';
       document.getElementById('seuilAlerte').value = localStorage.getItem('seuil_alerte') || '200';
+      document.getElementById('seuilExceptionnel').value = localStorage.getItem('seuil_exceptionnel') || '300';
       document.getElementById('appPin').value = localStorage.getItem('app_pin') || '';
       document.getElementById('configModal').classList.add('open');
     }
@@ -783,6 +796,7 @@
       localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
       localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
       localStorage.setItem('seuil_alerte', document.getElementById('seuilAlerte').value.trim() || '200');
+      localStorage.setItem('seuil_exceptionnel', document.getElementById('seuilExceptionnel').value.trim() || '300');
       localStorage.setItem('app_pin', document.getElementById('appPin').value.trim());
       fermerConfig();
       chargerDonnees();
@@ -871,8 +885,7 @@
       document.getElementById('soldePrevisionnel').innerText = `${soldePrevisionnel.toFixed(2)} €`;
 
       const seuil = parseFloat(localStorage.getItem('seuil_alerte')) || 200;
-      const capaciteEpargne = Math.max(0, soldePrevisionnel - seuil);
-      document.getElementById('capaciteVal').innerText = `${capaciteEpargne.toFixed(2)} €`;
+      if (activeAccountView === 'courant') afficherSoldeEstime(soldePrevisionnel);
 
       const card = document.getElementById('dashboardCard');
       card.classList.remove('status-green', 'status-orange', 'status-red');
@@ -939,6 +952,85 @@
       }
 
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
+    }
+
+    // ===== SOLDE ESTIMÉ FIN DE MOIS (cycle de paie à paie) =====
+    const normTxt = t => (t || '').toString().trim().toLowerCase();
+
+    function estDepenseVariable(op, descsFixes, seuilExc) {
+      if ((op.compte || 'courant') !== 'courant') return false;
+      if (op.type !== 'debit') return false;
+      if (op.chargeFixeId) return false;
+      if (descsFixes.has(normTxt(op.description))) return false;
+      if ((op.categorie || '').includes('Épargne') || op.operationLieeId) return false;
+      if (Math.abs(op.montant) >= seuilExc) return false;
+      return true;
+    }
+
+    function calculerDepensesVariables() {
+      const seuilExc = parseFloat(localStorage.getItem('seuil_exceptionnel')) || 300;
+      const descsFixes = new Set((rawData.chargesFixes || []).map(cf => normTxt(cf.description)));
+      const ops = (rawData.operations || []).filter(op => (op.compte || 'courant') === 'courant' && op.date);
+
+      // Débuts de cycle = réceptions de salaire (regroupées si moins de 15 jours d'écart)
+      const datesSalaire = ops
+        .filter(op => !op.isPrevision && op.type === 'credit' && (op.categorie || '').includes('Salaire'))
+        .map(op => op.date.slice(0, 10))
+        .sort();
+      const bornes = [];
+      datesSalaire.forEach(d => {
+        const last = bornes[bornes.length - 1];
+        if (!last || (new Date(d) - new Date(last)) / 86400000 >= 15) bornes.push(d);
+      });
+
+      const reelles = ops.filter(op => !op.isPrevision && estDepenseVariable(op, descsFixes, seuilExc));
+
+      // Cycles complets : entre deux salaires consécutifs
+      const totauxCycles = [];
+      for (let i = 0; i < bornes.length - 1; i++) {
+        const total = reelles
+          .filter(op => op.date.slice(0, 10) >= bornes[i] && op.date.slice(0, 10) < bornes[i + 1])
+          .reduce((s, op) => s + Math.abs(op.montant), 0);
+        totauxCycles.push(total);
+      }
+      const nbCycles = totauxCycles.length;
+      const moyenne = nbCycles ? totauxCycles.reduce((a, b) => a + b, 0) / nbCycles : null;
+
+      // Cycle en cours : depuis le dernier salaire + prévisions variables non validées
+      const debutCycle = bornes[bornes.length - 1] || null;
+      const depenseCycle = debutCycle
+        ? reelles.filter(op => op.date.slice(0, 10) >= debutCycle).reduce((s, op) => s + Math.abs(op.montant), 0)
+        : 0;
+      const prevuVariable = ops
+        .filter(op => op.isPrevision && estDepenseVariable(op, descsFixes, seuilExc))
+        .reduce((s, op) => s + Math.abs(op.montant), 0);
+
+      return { moyenne, nbCycles, depenseCycle, prevuVariable, debutCycle };
+    }
+
+    function afficherSoldeEstime(soldePrevisionnel) {
+      const box = document.getElementById('epargneBox');
+      const valEl = document.getElementById('soldeEstimeVal');
+      const detailEl = document.getElementById('soldeEstimeDetail');
+      const { moyenne, nbCycles, depenseCycle, prevuVariable } = calculerDepensesVariables();
+
+      if (moyenne === null) {
+        valEl.innerText = `${soldePrevisionnel.toFixed(2)} €`;
+        detailEl.innerText = "Pas encore de cycle de paie complet : moyenne indisponible.";
+        box.classList.toggle('negatif', soldePrevisionnel < 0);
+        return;
+      }
+
+      const dejaEngage = depenseCycle + prevuVariable;
+      const resteAPrevoir = Math.max(0, moyenne - dejaEngage);
+      const soldeEstime = soldePrevisionnel - resteAPrevoir;
+
+      valEl.innerText = `${soldeEstime.toFixed(2)} €`;
+      detailEl.innerText =
+        `Moy. variables : ${moyenne.toFixed(0)} €/mois · déjà ${depenseCycle.toFixed(0)} €` +
+        (prevuVariable > 0 ? ` (+${prevuVariable.toFixed(0)} € prévus)` : '') +
+        ` · sur ${nbCycles} mois`;
+      box.classList.toggle('negatif', soldeEstime < 0);
     }
 
     function afficherChargesFixes() {
@@ -1126,7 +1218,8 @@
         type: cf.type,
         categorie: cf.categorie,
         dateFinCredit: cf.dateFinCredit || null,
-        isPrevision: false
+        isPrevision: false,
+        chargeFixeId: cf.id
       });
       cf.valideCeMois = true;
       await pushToGitHub(`Validation charge : ${cf.description}`);
@@ -1148,7 +1241,8 @@
         montant: montantExact,
         type: 'credit',
         categorie: cf.categorie,
-        isPrevision: false
+        isPrevision: false,
+        chargeFixeId: cf.id
       });
 
       if (confirm("Réinitialiser les charges fixes pour lancer le NOUVEAU MOIS ?")) {
@@ -1194,6 +1288,7 @@
           gh_repo: localStorage.getItem('gh_repo') || '',
           gh_token: localStorage.getItem('gh_token') || '',
           seuil_alerte: localStorage.getItem('seuil_alerte') || '200',
+          seuil_exceptionnel: localStorage.getItem('seuil_exceptionnel') || '300',
           app_pin: localStorage.getItem('app_pin') || ''
         },
         data: rawData
@@ -1223,6 +1318,7 @@
           if (imported.config.gh_repo) localStorage.setItem('gh_repo', imported.config.gh_repo);
           if (imported.config.gh_token) localStorage.setItem('gh_token', imported.config.gh_token);
           if (imported.config.seuil_alerte) localStorage.setItem('seuil_alerte', imported.config.seuil_alerte);
+          if (imported.config.seuil_exceptionnel) localStorage.setItem('seuil_exceptionnel', imported.config.seuil_exceptionnel);
           if (imported.config.app_pin !== undefined) localStorage.setItem('app_pin', imported.config.app_pin);
 
           rawData = imported.data;
