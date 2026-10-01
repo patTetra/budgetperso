@@ -464,6 +464,9 @@
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
             <input type="checkbox" id="isChargeFixe"> Définir comme Charge Fixe Récurrente
           </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size:0.85rem;">
+            <input type="checkbox" id="isHorsMoyenne"> Exceptionnelle (exclue de la moyenne)
+          </label>
         </div>
 
         <div class="modal-actions">
@@ -705,6 +708,7 @@
       document.getElementById('isPrevision').checked = false;
       document.getElementById('isChargeFixe').checked = activeAccountView === 'fixes';
       document.getElementById('isVersementEpargne').checked = true;
+      document.getElementById('isHorsMoyenne').checked = false;
       
       const isFixes = activeAccountView === 'fixes';
       document.getElementById('groupDate').style.display = isFixes ? 'none' : 'block';
@@ -734,6 +738,7 @@
       document.getElementById('dateFinCredit').value = op.dateFinCredit || "";
       document.getElementById('isPrevision').checked = !!op.isPrevision;
       document.getElementById('isChargeFixe').checked = false;
+      document.getElementById('isHorsMoyenne').checked = !!op.horsMoyenne;
       
       document.getElementById('groupDate').style.display = 'block';
       document.getElementById('groupCompte').style.display = 'block';
@@ -975,7 +980,7 @@
     function estDepenseVariable(op, descsFixes, seuilExc) {
       if ((op.compte || 'courant') !== 'courant') return false;
       if (op.type !== 'debit') return false;
-      if (op.chargeFixeId) return false;
+      if (op.chargeFixeId || op.horsMoyenne) return false;
       if (descsFixes.has(normTxt(op.description))) return false;
       if (String(op.categorie || '').includes('Épargne') || op.operationLieeId) return false;
       if (Math.abs(op.montant) >= seuilExc) return false;
@@ -1437,6 +1442,7 @@
       } else {
         itemData.date = document.getElementById('dateOp').value;
         itemData.isPrevision = document.getElementById('isPrevision').checked;
+        itemData.horsMoyenne = document.getElementById('isHorsMoyenne').checked;
 
         const estVersementEpargneAuto = !editId && itemData.compte === 'livret' && itemData.type === 'credit' && document.getElementById('isVersementEpargne').checked;
 
@@ -1444,6 +1450,7 @@
           const idx = rawData.operations.findIndex(o => o.id === editId);
           if (idx !== -1) {
             itemData.operationLieeId = rawData.operations[idx].operationLieeId || null;
+            if (rawData.operations[idx].chargeFixeId) itemData.chargeFixeId = rawData.operations[idx].chargeFixeId;
             rawData.operations[idx] = itemData;
           }
         } else if (estVersementEpargneAuto) {
