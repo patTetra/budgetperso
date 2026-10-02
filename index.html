@@ -930,8 +930,13 @@
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
       let filteredOps = opsDuCompte.filter(op => op.description.toLowerCase().includes(searchQuery));
 
+      const prevs = filteredOps
+        .filter(op => op.isPrevision)
+        .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      const realisees = filteredOps.filter(op => !op.isPrevision);
+
       const groupesParMois = {};
-      filteredOps.forEach(op => {
+      realisees.forEach(op => {
         const d = new Date(op.date);
         const mois = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
         const jourKey = (op.date || '').slice(0, 10);
@@ -941,6 +946,11 @@
       });
 
       let html = "";
+      if (prevs.length) {
+        html += `<div class="month-group"><div class="month-title">⏳ À venir (${prevs.length})</div><div class="ops-list">`;
+        prevs.forEach(op => { html += renderOperation(op); });
+        html += `</div></div>`;
+      }
       for (const [mois, jours] of Object.entries(groupesParMois)) {
         html += `<div class="month-group"><div class="month-title">${mois}</div>`;
         const joursTries = Object.keys(jours).sort((a, b) => new Date(b) - new Date(a));
@@ -950,15 +960,28 @@
           libelleJour = libelleJour.charAt(0).toUpperCase() + libelleJour.slice(1);
           html += `<div class="day-separator">${libelleJour}</div><div class="ops-list">`;
           jours[jourKey].forEach(op => {
+            html += renderOperation(op);
+          });
+          html += `</div>`;
+        });
+        html += `</div>`;
+      }
+
+      document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
+    }
+
+    function renderOperation(op) {
             const icon = (op.categorie || "📦").split(' ')[0];
+            const datePrevHtml = op.isPrevision && op.date ? `<span class="op-credit-end">📅 Prévu le ${new Date(String(op.date).slice(0,10) + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>` : '';
             const finCreditHtml = op.dateFinCredit ? `<span class="op-credit-end">🗓️ Fin : ${formatMonthYear(op.dateFinCredit)}</span>` : '';
-            html += `
+            return `
               <div class="operation-wrapper">
                 <div class="operation-item ${op.isPrevision ? 'is-prevision' : ''}" onclick="ouvrirModalEdition('${op.id}')">
                   <div class="op-left">
                     <span class="op-cat-icon">${icon}</span>
                     <div class="op-info">
                       <span class="op-desc">${op.description}</span>
+                      ${datePrevHtml}
                       ${finCreditHtml}
                       <div style="display:flex; gap:6px;">
                         ${op.isPrevision ? `<button type="button" class="btn-action-charge prev" onclick="event.stopPropagation(); validerPrevision('${op.id}')">⏳ Valider</button>` : ''}
@@ -971,13 +994,6 @@
                   </div>
                 </div>
               </div>`;
-          });
-          html += `</div>`;
-        });
-        html += `</div>`;
-      }
-
-      document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
     }
 
     // ===== SOLDE ESTIMÉ FIN DE MOIS (cycle de paie à paie) =====
@@ -1229,6 +1245,8 @@
       const op = rawData.operations.find(o => o.id === id);
       if (op) {
         op.isPrevision = false;
+        const n = new Date();
+        op.date = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
         await pushToGitHub(`Validation prévision : ${op.description}`);
       }
     }
