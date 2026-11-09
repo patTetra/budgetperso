@@ -281,7 +281,9 @@
       width: 64px; height: 64px; border-radius: 50%; background: #1e293b; color: white;
       border: none; font-size: 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center;
       justify-content: center;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
+    .key-btn:active { background: #334155; }
   </style>
 </head>
 <body>
@@ -306,7 +308,7 @@
       <button class="key-btn" onclick="pressPin('7')">7</button>
       <button class="key-btn" onclick="pressPin('8')">8</button>
       <button class="key-btn" onclick="pressPin('9')">9</button>
-      <div></div>
+      <button class="key-btn" id="faceIdKey" style="visibility:hidden; font-size:1.3rem;" onclick="deverrouillerFaceId()" title="Face ID">🙂</button>
       <button class="key-btn" onclick="pressPin('0')">0</button>
       <button class="key-btn" onclick="clearPin()">⌫</button>
     </div>
@@ -504,6 +506,8 @@
         <input type="password" id="appPin" maxlength="4" placeholder="Requis pour déchiffrer" class="form-control" autocomplete="current-password">
       </div>
 
+      <button type="button" class="btn-secondary" id="btnFaceId" style="width:100%; margin-bottom:10px; display:none;" onclick="basculerFaceId()">🙂 Activer Face ID</button>
+
       <button class="btn-submit" style="width:100%; margin-bottom: 10px;" onclick="sauvegarderConfig()">Enregistrer</button>
       
       <hr style="border:0; border-top: 1px solid var(--border); margin: 16px 0;">
@@ -610,11 +614,75 @@
       }
     }
 
+    /* FACE ID / TOUCH ID (WebAuthn, authentificateur de l'appareil) */
+    const b64 = u8 => btoa(String.fromCharCode.apply(null, u8));
+    const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+    async function faceIdDisponible() {
+      try {
+        return !!(window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable
+          && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+      } catch (e) { return false; }
+    }
+
+    async function majBoutonFaceId() {
+      const btn = document.getElementById('btnFaceId');
+      if (!await faceIdDisponible()) { btn.style.display = 'none'; return; }
+      btn.style.display = 'block';
+      btn.innerText = localStorage.getItem('faceid_cred') ? '🙂 Désactiver Face ID' : '🙂 Activer Face ID';
+    }
+
+    async function basculerFaceId() {
+      if (localStorage.getItem('faceid_cred')) {
+        localStorage.removeItem('faceid_cred');
+        return majBoutonFaceId();
+      }
+      const pin = localStorage.getItem('app_pin');
+      if (!pin || pin.length !== 4) return alert("Enregistre d'abord un code PIN à 4 chiffres, puis réactive Face ID.");
+      try {
+        const cred = await navigator.credentials.create({ publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: 'Mes Comptes' },
+          user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'comptes', displayName: 'Mes Comptes' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+          authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+          timeout: 60000
+        }});
+        localStorage.setItem('faceid_cred', b64(new Uint8Array(cred.rawId)));
+        alert("Face ID activé. Il sera proposé au prochain lancement.");
+      } catch (e) {
+        alert("Activation de Face ID impossible : " + (e.message || e.name));
+      }
+      majBoutonFaceId();
+    }
+
+    async function deverrouillerFaceId(silencieux) {
+      const id = localStorage.getItem('faceid_cred');
+      if (!id) return;
+      try {
+        await navigator.credentials.get({ publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{ type: 'public-key', id: unb64(id), transports: ['internal'] }],
+          userVerification: 'required',
+          timeout: 60000
+        }});
+        document.getElementById('lockScreen').style.display = 'none';
+        clearPin();
+        await chargerDonnees();
+      } catch (e) {
+        if (silencieux !== true) console.error(e);
+      }
+    }
+
     function initSecurity() {
       initSecretMode();
       const savedPin = localStorage.getItem('app_pin');
       if (savedPin && savedPin.length === 4) {
         document.getElementById('lockScreen').style.display = 'flex';
+        if (localStorage.getItem('faceid_cred')) {
+          document.getElementById('faceIdKey').style.visibility = 'visible';
+          deverrouillerFaceId(true);
+        }
       } else {
         chargerDonnees();
       }
@@ -785,6 +853,7 @@
       document.getElementById('seuilExceptionnel').value = localStorage.getItem('seuil_exceptionnel') || '300';
       document.getElementById('appPin').value = localStorage.getItem('app_pin') || '';
       document.getElementById('configModal').classList.add('open');
+      majBoutonFaceId();
     }
     function fermerConfig() { document.getElementById('configModal').classList.remove('open'); }
 
@@ -1081,6 +1150,9 @@
       let charges = rawData.chargesFixes || [];
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
       if (searchQuery) charges = charges.filter(cf => cf.description.toLowerCase().includes(searchQuery));
+      // Pas encore passées en haut, puis ordre alphabétique
+      charges = charges.slice().sort((a, b) =>
+        (!!a.valideCeMois - !!b.valideCeMois) || a.description.localeCompare(b.description, 'fr', { sensitivity: 'base' }));
 
       let html = `<div class="month-group"><div class="month-title">CHARGES ET REVENUS DU CYCLE</div><div class="ops-list">`;
       charges.forEach(cf => {
