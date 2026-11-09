@@ -389,7 +389,7 @@
 
   <!-- RECHERCHE -->
   <div class="filter-section" id="filterSection">
-    <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher..." oninput="afficherDonnees()">
+    <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher (nom ou montant)..." oninput="afficherDonnees()">
   </div>
 
   <div id="historiqueContainer">Chargement...</div>
@@ -997,7 +997,7 @@
       document.getElementById('statDebit').innerText = `-${mDebit.toFixed(2)} €`;
 
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-      let filteredOps = opsDuCompte.filter(op => op.description.toLowerCase().includes(searchQuery));
+      let filteredOps = opsDuCompte.filter(op => correspondRecherche(op, searchQuery.trim()));
 
       const prevs = filteredOps
         .filter(op => op.isPrevision)
@@ -1037,6 +1037,14 @@
       }
 
       document.getElementById('historiqueContainer').innerHTML = html || "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Aucune opération.</p>";
+    }
+
+    // Recherche par description ou par montant (« 45 », « 45,05 », « -45.05 »)
+    function correspondRecherche(item, q) {
+      if (!q) return true;
+      if (String(item.description || '').toLowerCase().includes(q)) return true;
+      const qn = q.replace(/\s/g, '').replace(',', '.').replace(/^[-+]/, '');
+      return /^\d*\.?\d*$/.test(qn) && /\d/.test(qn) && Math.abs(item.montant).toFixed(2).includes(qn);
     }
 
     function renderOperation(op) {
@@ -1149,7 +1157,7 @@
     function afficherChargesFixes() {
       let charges = rawData.chargesFixes || [];
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-      if (searchQuery) charges = charges.filter(cf => cf.description.toLowerCase().includes(searchQuery));
+      if (searchQuery) charges = charges.filter(cf => correspondRecherche(cf, searchQuery.trim()));
       // Pas encore passées en haut, puis ordre alphabétique
       charges = charges.slice().sort((a, b) =>
         (!!a.valideCeMois - !!b.valideCeMois) || a.description.localeCompare(b.description, 'fr', { sensitivity: 'base' }));
