@@ -284,6 +284,20 @@
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
     }
     .key-btn:active { background: #334155; }
+
+    /* Bandeau d'état de l'enregistrement */
+    #toast {
+      position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 50%;
+      transform: translateX(-50%) translateY(-150px); z-index: 300;
+      background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 999px;
+      font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25); max-width: 90vw; transition: transform 0.25s ease;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { background: #15803d; }
+    #toast.error { background: #b91c1c; border-radius: 16px; }
+    .spinner { width: 16px; height: 16px; flex: none; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -313,6 +327,8 @@
       <button class="key-btn" onclick="clearPin()">⌫</button>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <div class="header">
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -1481,7 +1497,47 @@
       document.body.removeChild(link);
     }
 
-    async function pushToGitHub(commitMessage) {
+    /* ENREGISTREMENT : fenêtre fermée tout de suite, bandeau d'état, envois mis en file */
+    let toastTimer = null;
+    function showToast(kind, text, dureeMs) {
+      const t = document.getElementById('toast');
+      clearTimeout(toastTimer);
+      t.className = `show ${kind}`;
+      t.innerHTML = (kind === 'loading' ? '<span class="spinner"></span>' : '') + '<span></span>';
+      t.lastChild.textContent = text;
+      if (dureeMs) toastTimer = setTimeout(() => t.classList.remove('show'), dureeMs);
+    }
+
+    let pushEnCours = 0;
+    let echecDansLot = false;
+    let pushQueue = Promise.resolve();
+    function pushToGitHub(commitMessage) {
+      pushEnCours++;
+      fermerModalOp();
+      afficherDonnees();
+      showToast('loading', 'Enregistrement en cours…');
+      setSyncStatus('orange');
+      const tache = pushQueue.then(() => envoyerVersGitHub(commitMessage));
+      pushQueue = tache.catch(() => {});
+      return tache.then(() => {
+        pushEnCours--;
+        if (pushEnCours === 0) {
+          if (!echecDansLot) showToast('success', '✓ Enregistré', 1800);
+          echecDansLot = false;
+        }
+        return true;
+      }).catch(err => {
+        pushEnCours--;
+        echecDansLot = true;
+        console.error(err);
+        setSyncStatus('red');
+        showToast('error', "Échec de l'enregistrement : " + err.message + ". Touche 🔄 pour revenir à l'état enregistré.", 8000);
+        if (pushEnCours === 0) echecDansLot = false;
+        return false;
+      });
+    }
+
+    async function envoyerVersGitHub(commitMessage) {
       const { user, repo, token } = getConfig();
       const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
       
@@ -1489,7 +1545,7 @@
       const getRes = await fetch(url, { headers: { Authorization: `token ${token}` } });
       if (!getRes.ok) {
         setSyncStatus('red');
-        return alert("Erreur d'accès à GitHub");
+        throw new Error("accès à GitHub refusé (token ou dépôt)");
       }
       const fileData = await getRes.json();
 
@@ -1510,12 +1566,11 @@
 
       if (putRes.ok) {
         setSyncStatus('green');
-        fermerModalOp();
-        afficherDonnees();
-        setTimeout(chargerDonnees, 1500);
+        // on ne recharge que s'il n'y a plus aucun enregistrement en attente
+        setTimeout(() => { if (pushEnCours === 0) chargerDonnees(); }, 1500);
       } else {
         setSyncStatus('red');
-        alert("Erreur de mise à jour sur GitHub.");
+        throw new Error("mise à jour refusée par GitHub (code " + putRes.status + ")");
       }
     }
 
