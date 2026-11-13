@@ -224,13 +224,24 @@
     /* FAB */
     .fab {
       position: fixed;
-      bottom: 24px; right: calc(50% - 220px); width: 56px; height: 56px;
+      bottom: 82px; right: calc(50% - 220px); width: 56px; height: 56px;
       border-radius: 50%; background: var(--primary); color: white; border: none;
       font-size: 1.8rem;
       box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); cursor: pointer;
       display: flex; align-items: center; justify-content: center; z-index: 90;
     }
     @media (max-width: 480px) { .fab { right: 24px; } }
+
+    /* Petit bouton rond de virement, sous le bouton + */
+    .fab-mini {
+      position: fixed;
+      bottom: 24px; right: calc(50% - 214px); width: 46px; height: 46px;
+      border-radius: 50%; background: var(--primary); color: white; border: none;
+      font-size: 1.4rem; line-height: 1;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; z-index: 90;
+    }
+    @media (max-width: 480px) { .fab-mini { right: 29px; } }
 
     /* Modals */
     .modal-overlay {
@@ -403,8 +414,6 @@
     </div>
   </div>
 
-  <button type="button" class="btn-secondary" id="btnVirement" style="width:100%; margin-bottom:16px;" onclick="ouvrirModalVirement()">🔁 Virement courant ⇄ livret</button>
-
   <!-- RECHERCHE -->
   <div class="filter-section" id="filterSection">
     <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher (nom ou montant)..." oninput="afficherDonnees()">
@@ -413,6 +422,7 @@
   <div id="historiqueContainer">Chargement...</div>
 
   <button class="fab" id="fabAdd" onclick="ouvrirModalAjout()">+</button>
+  <button class="fab-mini" id="fabVirement" onclick="ouvrirModalVirement()" title="Virement courant ⇄ livret" aria-label="Virement">⇄</button>
 
   <!-- MODAL OPÉRATION -->
   <div id="opModal" class="modal-overlay">
@@ -761,7 +771,9 @@
 
     function selectAccountView(view) {
       activeAccountView = view;
-      document.getElementById('btnVirement').style.display = (view === 'courant' || view === 'livret') ? 'block' : 'none';
+      const virementVisible = (view === 'courant' || view === 'livret');
+      document.getElementById('fabVirement').style.display = virementVisible ? 'flex' : 'none';
+      document.getElementById('fabAdd').style.bottom = virementVisible ? '82px' : '24px';
       document.querySelectorAll('.account-tab').forEach(t => t.classList.remove('active'));
       document.getElementById(`tab-${view}`).classList.add('active');
 
