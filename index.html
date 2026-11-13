@@ -403,6 +403,8 @@
     </div>
   </div>
 
+  <button type="button" class="btn-secondary" id="btnVirement" style="width:100%; margin-bottom:16px;" onclick="ouvrirModalVirement()">🔁 Virement courant ⇄ livret</button>
+
   <!-- RECHERCHE -->
   <div class="filter-section" id="filterSection">
     <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher (nom ou montant)..." oninput="afficherDonnees()">
@@ -490,6 +492,40 @@
         <div class="modal-actions">
           <button type="button" id="btnDelete" class="btn-delete" onclick="supprimerOperation()">Supprimer</button>
           <button type="submit" id="btnSubmit" class="btn-submit">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL VIREMENT -->
+  <div id="virementModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🔁 Virement</h2>
+        <button class="btn-icon" onclick="fermerModalVirement()">✕</button>
+      </div>
+      <form onsubmit="sauvegarderVirement(event)">
+        <div class="form-group">
+          <label>Sens du virement</label>
+          <select id="virSens" class="form-control">
+            <option value="courant>livret">💳 Compte Courant ➜ 🐷 Livret</option>
+            <option value="livret>courant">🐷 Livret ➜ 💳 Compte Courant</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Montant (€)</label>
+          <input type="number" step="0.01" inputmode="decimal" id="virMontant" class="form-control" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="virDate" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Libellé (facultatif)</label>
+          <input type="text" id="virLibelle" class="form-control" placeholder="ex: Noël, Vacances...">
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit">Valider le virement</button>
         </div>
       </form>
     </div>
@@ -725,6 +761,7 @@
 
     function selectAccountView(view) {
       activeAccountView = view;
+      document.getElementById('btnVirement').style.display = (view === 'courant' || view === 'livret') ? 'block' : 'none';
       document.querySelectorAll('.account-tab').forEach(t => t.classList.remove('active'));
       document.getElementById(`tab-${view}`).classList.add('active');
 
@@ -1347,13 +1384,69 @@
       }
     }
 
+    function ouvrirModalVirement() {
+      document.getElementById('virSens').value = activeAccountView === 'livret' ? 'livret>courant' : 'courant>livret';
+      document.getElementById('virMontant').value = '';
+      document.getElementById('virLibelle').value = '';
+      document.getElementById('virDate').valueAsDate = new Date();
+      document.getElementById('virementModal').classList.add('open');
+      setTimeout(() => document.getElementById('virMontant').focus(), 100);
+    }
+    function fermerModalVirement() { document.getElementById('virementModal').classList.remove('open'); }
+
+    function soldeDuCompte(compte) {
+      return (rawData.operations || [])
+        .filter(o => (o.compte || 'courant') === compte && !o.isPrevision)
+        .reduce((s, o) => s + (o.type === 'debit' ? -Math.abs(o.montant) : Math.abs(o.montant)), 0);
+    }
+
+    async function sauvegarderVirement(e) {
+      e.preventDefault();
+      const versLivret = document.getElementById('virSens').value === 'courant>livret';
+      const montant = parseFloat(document.getElementById('virMontant').value);
+      if (isNaN(montant) || montant <= 0) return alert("Montant invalide.");
+      const source = versLivret ? 'courant' : 'livret';
+      if (soldeDuCompte(source) < montant &&
+          !confirm(`Le solde actuel (${soldeDuCompte(source).toFixed(2)} €) est inférieur à ce virement. Continuer ?`)) return;
+
+      const date = document.getElementById('virDate').value || new Date().toISOString().slice(0, 10);
+      const libelle = document.getElementById('virLibelle').value.trim();
+      const suffixe = libelle ? ` (${libelle})` : '';
+      const idCourant = Date.now().toString();
+      const idLivret = (Date.now() + 1).toString();
+
+      rawData.operations.push({
+        id: idCourant, date, compte: 'courant',
+        description: (versLivret ? '🐷 Virement vers livret' : '🐷 Virement depuis livret') + suffixe,
+        montant, type: versLivret ? 'debit' : 'credit', categorie: '🏦 Épargne',
+        isPrevision: false, operationLieeId: idLivret
+      });
+      rawData.operations.push({
+        id: idLivret, date, compte: 'livret',
+        description: (versLivret ? 'Virement depuis courant' : 'Virement vers courant') + suffixe,
+        montant, type: versLivret ? 'credit' : 'debit', categorie: '🏦 Épargne',
+        isPrevision: false, operationLieeId: idCourant
+      });
+
+      fermerModalVirement();
+      await pushToGitHub(`Virement ${versLivret ? 'courant ➜ livret' : 'livret ➜ courant'} : ${montant} €`);
+    }
+
+    // Charge fixe dont le nom commence par « Épargne » : créditée sur le livret à la validation
+    function estChargeEpargne(cf) {
+      return cf.type === 'debit' &&
+        String(cf.description || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().startsWith('epargne');
+    }
+
     async function validerChargeFixe(id) {
       const cf = rawData.chargesFixes.find(c => c.id === id);
       if (!cf) return;
 
-      rawData.operations.push({
-        id: Date.now().toString(),
-        date: new Date().toISOString().slice(0, 10),
+      const idCourant = Date.now().toString();
+      const aujourdhui = new Date().toISOString().slice(0, 10);
+      const op = {
+        id: idCourant,
+        date: aujourdhui,
         compte: 'courant',
         description: cf.description,
         montant: cf.montant,
@@ -1362,7 +1455,24 @@
         dateFinCredit: cf.dateFinCredit || null,
         isPrevision: false,
         chargeFixeId: cf.id
-      });
+      };
+      rawData.operations.push(op);
+
+      if (estChargeEpargne(cf)) {
+        const idLivret = (Date.now() + 1).toString();
+        op.operationLieeId = idLivret;
+        rawData.operations.push({
+          id: idLivret,
+          date: aujourdhui,
+          compte: 'livret',
+          description: cf.description,
+          montant: Math.abs(cf.montant),
+          type: 'credit',
+          categorie: '🏦 Épargne',
+          isPrevision: false,
+          operationLieeId: idCourant
+        });
+      }
       cf.valideCeMois = true;
       await pushToGitHub(`Validation charge : ${cf.description}`);
     }
